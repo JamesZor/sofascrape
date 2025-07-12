@@ -1,0 +1,13 @@
+# Main config for handling the configs for general components/ and parts 
+# to general, (tournament details etc) 
+#
+defaults:
+  - links: general 
+
+
+# Details 
+details:
+  name: "general_main"
+  links: "links/general"
+  type: "default"
+
