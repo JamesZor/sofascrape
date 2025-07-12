@@ -1,0 +1,12 @@
+# Main config for handling the configs for running notebooks in regards 
+# to general, (tournament details etc) 
+#
+defaults:
+  - links: general 
+
+
+# Details 
+details:
+  name: "notebook_general"
+  links: "links/general"
+  type: "exploring"
