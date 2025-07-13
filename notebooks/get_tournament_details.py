@@ -118,4 +118,4 @@ if __name__ == "__main__":
     data = load_page_data()
     json_data = json.dumps(data)
     print(f"{type(json_data)=}.")
-    pydantic_example(json_data)
+    pydantic_example(**data)

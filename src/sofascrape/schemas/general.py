@@ -8,9 +8,9 @@ class SportSchema(BaseModel):
 
 class CategorySchema(BaseModel):
     name: str
+    id: int
     slug: str
     sport: SportSchema
-    id: int
 
 
 class TournamentSchema(BaseModel):
