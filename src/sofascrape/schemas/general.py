@@ -1,4 +1,10 @@
+from typing import List
+
 from pydantic import BaseModel
+
+##############################
+# tournament
+##############################
 
 
 class SportSchema(BaseModel):
@@ -22,3 +28,18 @@ class TournamentSchema(BaseModel):
 
 class TournamentData(BaseModel):
     tournament: TournamentSchema
+
+
+##############################
+# seasons
+##############################
+
+
+class SeasonSchema(BaseModel):
+    name: str
+    id: int
+    year: str
+
+
+class SeasonsListSchema(BaseModel):
+    seasons: List[SeasonSchema]

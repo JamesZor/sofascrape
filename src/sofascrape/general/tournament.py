@@ -36,11 +36,13 @@ class TournamentComponentScraper(BaseComponentScraper):
         self.raw_data: Optional[Dict] = None
         self.data: Optional[schemas.general.TournamentData] = None
 
+    # can get rid as moved to abstract class
     def _get_cfg(self) -> DictConfig:
         with initialize(config_path="../conf/", version_base="1.3"):
             cfg = compose(config_name="general")
         return cfg
 
+    # look at moving to abstract class # TODO
     def _validate_inputs(self, tournamentid: int, webdriver: MyWebDriver) -> None:
         """Validate constructor inputs."""
         if not isinstance(webdriver, MyWebDriver):

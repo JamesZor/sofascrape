@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Generic, TypeVar
 
+from hydra import compose, initialize
+from omegaconf import DictConfig
 from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
@@ -24,3 +26,8 @@ class BaseComponentScraper(ABC, Generic[T]):
     def process(self) -> T:
         """High-level workflow: fetch, parse, and return data."""
         pass
+
+    def _get_cfg(self) -> DictConfig:
+        with initialize(config_path="../conf/", version_base="1.3"):
+            cfg = compose(config_name="general")
+        return cfg
