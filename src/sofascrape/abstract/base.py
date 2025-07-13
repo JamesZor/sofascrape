@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Dict
 
 
 class BaseComponentScraper(ABC):
@@ -7,12 +8,12 @@ class BaseComponentScraper(ABC):
     """
 
     @abstractmethod
-    def get_data(self):
+    def get_data(self) -> Dict:
         """Fetch raw data from a source (e.g., API, web page)."""
         pass
 
     @abstractmethod
-    def parse_data(self):
+    def parse_data(self) -> Dict:
         """Parse the fetched data into structured form."""
         pass
 

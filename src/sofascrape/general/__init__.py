@@ -1,5 +1,5 @@
 # general
 
-from .tournament import Tournament
+from .tournament import TournamentComponentScraper
 
-__all__ = ["Tournament"]
+__all__ = ["TournamentComponentScraper"]
