@@ -3,7 +3,7 @@ from typing import Dict, Optional
 
 from hydra import compose, initialize
 from omegaconf import DictConfig
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from webdriver import MyWebDriver
 
 from sofascrape.abstract.base import BaseComponentScraper
@@ -34,7 +34,7 @@ class TournamentComponentScraper(BaseComponentScraper):
         )
         # Initialize data attributes
         self.raw_data: Optional[Dict] = None
-        self.data: Optional[schemas.general.TournamentData] = None
+        self.data: Optional[TournamentData] = None
 
     # can get rid as moved to abstract class
     def _get_cfg(self) -> DictConfig:

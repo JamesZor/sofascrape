@@ -51,5 +51,26 @@ class SeasonsComponentScraper(BaseComponentScraper):
 
         except Exception as e:
             logger.error(
-                f"failed to get data for seasons, for tournament id {self.tournamentid}."
+                f"failed to get data for seasons, for tournament id {self.tournamentid}. {str(e)}."
             )
+
+        # TODO
+
+    def parse_data(self):
+        """Parse raw data into structured format using Pydantic.
+
+        Raises:
+            ValueError: If raw_data is None
+            ValidationError: If data doesn't match expected schema
+        """
+        if self.raw_data is None:
+            raise ValueError("No raw data available. Call get_data() first.")
+        try:
+            self.data: Dict = None
+        except Exception as e:
+            raise e
+
+    def process(self):
+        pass
+
+    a: Dict = None
