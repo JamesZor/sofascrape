@@ -54,8 +54,6 @@ class SeasonsComponentScraper(BaseComponentScraper):
                 f"failed to get data for seasons, for tournament id {self.tournamentid}. {str(e)}."
             )
 
-        # TODO
-
     def parse_data(self):
         """Parse raw data into structured format using Pydantic.
 
@@ -65,12 +63,40 @@ class SeasonsComponentScraper(BaseComponentScraper):
         """
         if self.raw_data is None:
             raise ValueError("No raw data available. Call get_data() first.")
+
         try:
-            self.data: Dict = None
+            self.data = SeasonsListSchema.model_validate(self.raw_data)
+            logger.info(
+                f"Successfully parsed data for seasons for tournament {self.tournamentid}."
+            )
+        except ValidationError as e:
+            logger.warning(
+                f"validation failed for seasons {self.tournamentid =}: {str(e)}."
+            )
+            raise
+
         except Exception as e:
-            raise e
+            logger.error(
+                f"Unexpected error parsing seasons, {self.tournamentid=}: {str(e)}."
+            )
+            raise
 
     def process(self):
-        pass
+        """Complete processing pipeline: fetch and parse data.
+        Returns:
+            SeasonsList : Parsed and validated tournament season data.
+        Raises:
+            Exception: If any step in the pipeline fails
+        """
+        try:
+            logger.info(f"Starting processing for tournament {self.tournamentid}")
+            self.get_data()
+            self.parse_data()
+            logger.info(f"Successfully processed tournament {self.tournamentid}")
+            return self.data
 
-    a: Dict = None
+        except Exception as e:
+            logger.error(
+                f"Processing failed for tournament {self.tournamentid}: {str(e)}"
+            )
+            raise

@@ -87,9 +87,41 @@ def pydantic_example_1(data):
             # print(f"- {season.name}: {season.year}")
 
 
-if __name__ == "__main__":
-    #    process_get()
+# seasons
+def seasons_main_func():
     ns = NotebookSaveLoad()
     data = ns.load(file_name="seasons_1")
-    s = data.get("seasons")
     pydantic_example_1(data)
+
+
+### For events
+def get_events_in_season(cfg: DictConfig, tournamentid: int, seasonid: int) -> Dict:
+    webmanger = ManagerWebdriver()
+    d1 = webmanger.spawn_webdriver()
+    url: str = cfg.links.events_season_empty.format(
+        tournamentID=tournamentid, seasonID=seasonid
+    )
+    page_date = d1.get_page(url)
+
+    d1.close()
+    return page_date
+
+
+def main_event_run():
+    cfg: DictConfig = create_global_cfg()
+    tournamentid: int = 1
+    seasonid: int = 61627
+
+    page_date = get_events_in_season(
+        cfg=cfg, tournamentid=tournamentid, seasonid=seasonid
+    )
+
+    ns = NotebookSaveLoad()
+    ns.save(file_name=f"events_season_{seasonid}", data=page_date, indent=4)
+
+
+if __name__ == "__main__":
+    ns = NotebookSaveLoad()
+    data = ns.load(file_name="events_season_61627")
+    print(json.dumps(data.get("events")[0], indent=6))
+    #    process_get()
