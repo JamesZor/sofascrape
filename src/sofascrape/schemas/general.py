@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 class SportSchema(BaseModel):
     name: str
+    slug: str
     id: int
 
 
