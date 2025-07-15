@@ -297,4 +297,6 @@ if __name__ == "__main__":
                 valid_count += 1
             else:
                 not_valid_count += 1
-    print(f" {valid_count =} ..... {not_valid_count=}")
+
+        print("+" * 20)
+        print(f" {valid_count =} ..... {not_valid_count=}")

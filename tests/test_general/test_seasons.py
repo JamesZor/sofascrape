@@ -1,8 +1,5 @@
-import json
-import logging
-
 import pytest
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 from webdriver import ManagerWebdriver
 
 from sofascrape.general import SeasonsComponentScraper

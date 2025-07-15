@@ -24,15 +24,13 @@ class SeasonsComponentScraper(BaseComponentScraper):
         Raises:
             ValueError: If tournamentid is invalid or webdriver is wrong type
         """
+        super().__init__(webdriver=webdriver)
         self.tournamentid: int = tournamentid
         self.webdriver: MyWebDriver = webdriver
-        self.cfg: DictConfig = self._get_cfg()
+
         self.page_url: str = self.cfg.links.seasons_empty.format(
             tournamentID=tournamentid
         )
-        # Initialize data attributes
-        self.raw_data: Optional[Dict] = None
-        self.data: Optional[SeasonsListSchema] = None
 
     def get_data(self):
         """Fetch the raw seasons lsit data from api.
@@ -61,9 +59,6 @@ class SeasonsComponentScraper(BaseComponentScraper):
             ValueError: If raw_data is None
             ValidationError: If data doesn't match expected schema
         """
-        if self.raw_data is None:
-            raise ValueError("No raw data available. Call get_data() first.")
-
         try:
             self.data = SeasonsListSchema.model_validate(self.raw_data)
             logger.info(
@@ -78,25 +73,5 @@ class SeasonsComponentScraper(BaseComponentScraper):
         except Exception as e:
             logger.error(
                 f"Unexpected error parsing seasons, {self.tournamentid=}: {str(e)}."
-            )
-            raise
-
-    def process(self):
-        """Complete processing pipeline: fetch and parse data.
-        Returns:
-            SeasonsList : Parsed and validated tournament season data.
-        Raises:
-            Exception: If any step in the pipeline fails
-        """
-        try:
-            logger.info(f"Starting processing for tournament {self.tournamentid}")
-            self.get_data()
-            self.parse_data()
-            logger.info(f"Successfully processed tournament {self.tournamentid}")
-            return self.data
-
-        except Exception as e:
-            logger.error(
-                f"Processing failed for tournament {self.tournamentid}: {str(e)}"
             )
             raise

@@ -24,35 +24,14 @@ class TournamentComponentScraper(BaseComponentScraper):
         Raises:
             ValueError: If tournamentid is invalid or webdriver is wrong type
         """
-        self._validate_inputs(tournamentid, webdriver)
+        super().__init__(webdriver=webdriver)
 
         self.tournamentid: int = tournamentid
         self.webdriver: MyWebDriver = webdriver
-        self.cfg: DictConfig = self._get_cfg()
+
         self.page_url: str = self.cfg.links.tournament_empty.format(
             tournamentID=tournamentid
         )
-        # Initialize data attributes
-        self.raw_data: Optional[Dict] = None
-        self.data: Optional[TournamentData] = None
-
-    # can get rid as moved to abstract class
-    def _get_cfg(self) -> DictConfig:
-        with initialize(config_path="../conf/", version_base="1.3"):
-            cfg = compose(config_name="general")
-        return cfg
-
-    # look at moving to abstract class # TODO
-    def _validate_inputs(self, tournamentid: int, webdriver: MyWebDriver) -> None:
-        """Validate constructor inputs."""
-        if not isinstance(webdriver, MyWebDriver):
-            raise ValueError("Correct webdriver needs to be passed.")
-
-        if not isinstance(tournamentid, int) or tournamentid < 0:
-            raise ValueError(
-                f"tournamentid must be a positive integer. "
-                f"Got: {tournamentid=}, {type(tournamentid)=}"
-            )
 
     def get_data(self) -> None:
         """Fetch raw tournament data from the web page.
@@ -107,25 +86,5 @@ class TournamentComponentScraper(BaseComponentScraper):
         except Exception as e:
             logger.error(
                 f"Unexpected error parsing tournament {self.tournamentid}: {str(e)}"
-            )
-            raise
-
-    def process(self) -> TournamentData:
-        """Complete processing pipeline: fetch and parse data.
-        Returns:
-            TournamentData: Parsed and validated tournament data
-        Raises:
-            Exception: If any step in the pipeline fails
-        """
-        try:
-            logger.info(f"Starting processing for tournament {self.tournamentid}")
-            self.get_data()
-            self.parse_data()
-            logger.info(f"Successfully processed tournament {self.tournamentid}")
-            return self.data
-
-        except Exception as e:
-            logger.error(
-                f"Processing failed for tournament {self.tournamentid}: {str(e)}"
             )
             raise

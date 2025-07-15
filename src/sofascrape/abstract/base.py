@@ -1,9 +1,13 @@
+import logging
 from abc import ABC, abstractmethod
-from typing import Dict, Generic, TypeVar
+from typing import Dict, Generic, Optional, TypeVar
 
 from hydra import compose, initialize
 from omegaconf import DictConfig
 from pydantic import BaseModel
+from webdriver import MyWebDriver
+
+logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -12,6 +16,13 @@ class BaseComponentScraper(ABC, Generic[T]):
     """
     Lower level componet. Gets the data and parse it.
     """
+
+    def __init__(self, webdriver: MyWebDriver):
+        self.webdriver: MyWebDriver = webdriver
+        self.cfg: DictConfig = self._get_cfg()
+
+        self.raw_data: Optional[Dict] = None
+        self.data: Optional[T] = None
 
     @abstractmethod
     def get_data(self) -> None:
@@ -25,9 +36,36 @@ class BaseComponentScraper(ABC, Generic[T]):
 
     def process(self) -> T:
         """High-level workflow: fetch, parse, and return data."""
-        pass
+        try:
+            logger.info(f"Starting processing...")
+            self.get_data()
+
+            # Moved validation to parent
+            if self.raw_data is None:
+                raise ValueError(
+                    "No raw data available. get_data() failed to set raw_data."
+                )
+
+            self.parse_data()
+            logger.info(f"Successfully processed data")
+            return self.data
+        except Exception as e:
+            logger.error(f"Processing failed: {str(e)}")
+            raise
 
     def _get_cfg(self) -> DictConfig:
         with initialize(config_path="../conf/", version_base="1.3"):
             cfg = compose(config_name="general")
         return cfg
+
+    # TODO
+    def _validate_inputs(self, tournamentid: int, webdriver: MyWebDriver) -> None:
+        """Validate constructor inputs."""
+        if not isinstance(webdriver, MyWebDriver):
+            raise ValueError("Correct webdriver needs to be passed.")
+
+        if not isinstance(tournamentid, int) or tournamentid < 0:
+            raise ValueError(
+                f"tournamentid must be a positive integer. "
+                f"Got: {tournamentid=}, {type(tournamentid)=}"
+            )
