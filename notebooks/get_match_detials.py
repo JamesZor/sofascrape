@@ -79,4 +79,5 @@ if __name__ == "__main__":
 
     # base match
     base_match = nbu.load(file_name=f"football_base_match_{matchid}")
+    print(base_match.get("event").keys())
     process_base_match_pydantic(base_match)
