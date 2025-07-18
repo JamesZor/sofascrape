@@ -73,11 +73,26 @@ def process_base_match_pydantic(event):
 if __name__ == "__main__":
     ### Set up for the notebook
     nbu = NotebookUtils(NoteBookType.FOOTBALL)
+    nbu_g = NotebookUtils(NoteBookType.GENERAL)
     matchid = 12436870
     playerid = 149380  # Harry Maguire
     #    get_and_save_sample(nbu=nbu, matchid=matchid, playerid=playerid)
-
-    # base match
     base_match = nbu.load(file_name=f"football_base_match_{matchid}")
-    print(base_match.get("event").keys())
-    process_base_match_pydantic(base_match)
+    print(f"base match keys: {base_match.get('event').keys()}.")
+
+    event_base = nbu_g.load(file_name="event_0_season_61627")
+    print(f"base base keys: {event_base.keys()}.")
+
+    s1 = set(base_match.get("event").keys())
+    s2 = set(event_base.keys())
+    intersection = s1.intersection(s2)
+    diff = s1 - s2
+
+    print(f"{intersection =} .... {diff =}")
+
+"""
+intersection ={'finalResultOnly', 'roundInfo', 'varInProgress', 'hasEventPlayerStatistics', 'awayTeam', 'changes', 'time', 'tournament', 'winnerCode', 'hasGlobalHighlights', 'hasEventPlayerHeatMap', 'status', 'awayScore', 'crowdsourcingDataDisplayEnabled', 'homeScore', 'feedLocked', 'slug', 'homeTeam', 'season', 'id', 'hasXg', 'customId', 'isEditor', 'detailId', 'startTimestamp'} .
+diff ={'defaultPeriodLength', 'defaultPeriodCount', 'attendance', 'defaultOvertimeLength', 'venue', 'showTotoPromo', 'fanRatingEvent', 'referee', 'seasonStatisticsType', 'currentPeriodStartTimestamp'}
+"""
+# base match
+#    process_base_match_pydantic(base_match)
