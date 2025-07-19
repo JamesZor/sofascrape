@@ -245,3 +245,47 @@ class FootballEventSchema(EventSchema):
 
 class FootballDetailsSchema(BaseModel):
     event: FootballEventSchema
+
+
+##############################
+# Football Statistics Schemas
+##############################
+
+
+class FootballStatisticItemSchema(BaseModel):
+    """Individual statistic item within a group"""
+
+    key: str
+    name: str
+    home: str
+    away: str
+    compareCode: int
+    statisticsType: str  # "positive", "negative"
+    valueType: str  # "event", "team"
+    homeValue: float  # Can be int or float
+    awayValue: float  # Can be int or float
+    renderType: int
+
+    # Optional fields for percentage-based stats
+    homeTotal: Optional[int] = None
+    awayTotal: Optional[int] = None
+
+
+class StatisticGroupSchema(BaseModel):
+    """Group of related statistics (e.g., "Match overview", "Shots", etc.)"""
+
+    groupName: str
+    statisticsItems: List[FootballStatisticItemSchema]
+
+
+class FootballStatisticPeriodSchema(BaseModel):
+    """Statistics for a specific period (ALL, 1ST, 2ND, etc.)"""
+
+    period: str  # "ALL", "1ST", "2ND"
+    groups: List[StatisticGroupSchema]
+
+
+class FootballStatsSchema(BaseModel):
+    """Complete football statistics data"""
+
+    statistics: List[FootballStatisticPeriodSchema]

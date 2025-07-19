@@ -187,9 +187,7 @@ def notes_on_diff_keys():
         print("=" * 30)
 
 
-if __name__ == "__main__":
-    ### Set up for the notebook
-    nbu = NotebookUtils(NoteBookType.FOOTBALL)
+def match_event_details():
     nbu_g = NotebookUtils(NoteBookType.GENERAL)
     matchid = 12436870
     playerid = 149380  # Harry Maguire
@@ -201,3 +199,66 @@ if __name__ == "__main__":
 
     # base match
     process_base_match_pydantic(base_match)
+
+
+########################################
+#### stats
+########################################
+class FootballStatisticItemSchema(BaseModel):
+    """Individual statistic item within a group"""
+
+    key: str
+    name: str
+    home: str
+    away: str
+    compareCode: int
+    statisticsType: str  # "positive", "negative"
+    valueType: str  # "event", "team"
+    homeValue: float  # Can be int or float
+    awayValue: float  # Can be int or float
+    renderType: int
+
+    # Optional fields for percentage-based stats
+    homeTotal: Optional[int] = None
+    awayTotal: Optional[int] = None
+
+
+class StatisticGroupSchema(BaseModel):
+    """Group of related statistics (e.g., "Match overview", "Shots", etc.)"""
+
+    groupName: str
+    statisticsItems: List[FootballStatisticItemSchema]
+
+
+class FootballStatisticPeriodSchema(BaseModel):
+    """Statistics for a specific period (ALL, 1ST, 2ND, etc.)"""
+
+    period: str  # "ALL", "1ST", "2ND"
+    groups: List[StatisticGroupSchema]
+
+
+class FootballStatsSchema(BaseModel):
+    """Complete football statistics data"""
+
+    statistics: List[FootballStatisticPeriodSchema]
+
+
+def process_stats_pydantic(data):
+    try:
+        results = FootballStatsSchema.model_validate(data)
+
+        print(results.model_dump_json(indent=6))
+    except Exception as e:
+        print(f"Failed with error : {str(e)}.")
+
+
+if __name__ == "__main__":
+    ### Set up for the notebook
+    nbu = NotebookUtils(NoteBookType.FOOTBALL)
+    matchid = 12436870
+    playerid = 149380  # Harry Maguire
+    linkT = LinkType.STATS
+    raw_stats = nbu.load(file_name=f"{linkT.value}_{matchid}")
+    process_stats_pydantic(raw_stats)
+#    print(all_stats[0])
+#    print(json.dumps(all_stats, indent=6))
