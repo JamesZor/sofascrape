@@ -181,9 +181,9 @@ class VenueSchema(BaseModel):
     capacity: int
     id: int
     city: CitySchema
-    venueCoordinates: VenueCoordinatesSchema
-    country: CountrySchema
-    stadium: StadiumSchema
+    venueCoordinates: Optional[VenueCoordinatesSchema] = None
+    country: Optional[CountrySchema] = None
+    stadium: Optional[StadiumSchema] = None
 
 
 class ManagerSchema(BaseModel):
