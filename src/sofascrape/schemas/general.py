@@ -423,3 +423,144 @@ class FootballLineupSchema(BaseModel):
     confirmed: bool
     home: TeamLineupSchema
     away: TeamLineupSchema
+
+
+########################################
+#### incidents
+########################################
+class CoordinatesSchema(BaseModel):
+    """X, Y coordinates on the pitch"""
+
+    x: float
+    y: float
+
+
+class PassingNetworkActionSchema(BaseModel):
+    """Individual action in passing network leading to goal"""
+
+    player: LineupPlayerSchema  # Reuse from lineup schemas
+    eventType: str  # "pass", "ball-movement", "goal"
+    time: int
+    playerCoordinates: CoordinatesSchema
+    passEndCoordinates: Optional[CoordinatesSchema] = None
+    gkCoordinates: Optional[CoordinatesSchema] = None
+    goalShotCoordinates: Optional[CoordinatesSchema] = None
+    goalMouthCoordinates: Optional[CoordinatesSchema] = None
+    goalkeeper: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    isHome: bool
+    isAssist: Optional[bool] = None
+    bodyPart: Optional[str] = None  # "left-foot", "right-foot", "head"
+    goalType: Optional[str] = None  # "regular", "penalty", "own-goal"
+
+
+class PeriodIncidentSchema(BaseModel):
+    """Period incidents (HT, FT)"""
+
+    text: str  # "HT", "FT"
+    homeScore: int
+    awayScore: int
+    isLive: bool
+    time: int
+    addedTime: int
+    timeSeconds: int
+    reversedPeriodTime: int
+    reversedPeriodTimeSeconds: int
+    periodTimeSeconds: int
+    incidentType: str = "period"
+
+
+class InjuryTimeIncidentSchema(BaseModel):
+    """Injury time incidents"""
+
+    length: int
+    time: int
+    addedTime: int
+    reversedPeriodTime: int
+    incidentType: str = "injuryTime"
+
+
+class SubstitutionIncidentSchema(BaseModel):
+    """Substitution incidents"""
+
+    playerIn: LineupPlayerSchema  # Reuse from lineup schemas
+    playerOut: LineupPlayerSchema  # Reuse from lineup schemas
+    id: int
+    time: int
+    addedTime: Optional[int] = None
+    injury: bool
+    isHome: bool
+    incidentClass: str
+    reversedPeriodTime: int
+    incidentType: str = "substitution"
+
+
+class CardIncidentSchema(BaseModel):
+    """Card incidents (yellow, red)"""
+
+    player: LineupPlayerSchema  # Reuse from lineup schemas
+    playerName: str
+    reason: str
+    rescinded: bool
+    id: int
+    time: int
+    isHome: bool
+    incidentClass: str  # "yellow", "red"
+    reversedPeriodTime: int
+    incidentType: str = "card"
+
+
+class GoalIncidentSchema(BaseModel):
+    """Goal incidents"""
+
+    homeScore: int
+    awayScore: int
+    player: LineupPlayerSchema  # Reuse from lineup schemas
+    assist1: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    assist2: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    footballPassingNetworkAction: Optional[List[PassingNetworkActionSchema]] = None
+    id: int
+    time: int
+    isHome: bool
+    incidentClass: str
+    reversedPeriodTime: int
+    incidentType: str = "goal"
+
+
+class TeamColorsIncidentSchema(BaseModel):
+    """Team colors in incidents"""
+
+    goalkeeperColor: PlayerColorSchema  # Reuse from lineup
+    playerColor: PlayerColorSchema
+
+
+class FootballIncidentsSchema(BaseModel):
+    """Complete football incidents data"""
+
+    incidents: List[Any]  # Mixed list of different incident types
+    home: TeamColorsIncidentSchema
+    away: TeamColorsIncidentSchema
+
+    class Config:
+        # Allow extra fields for future incident types
+        extra = "allow"
+
+
+##############################
+# Football Graph Schemas
+##############################
+
+
+class GraphPointSchema(BaseModel):
+    """Individual graph point representing match momentum at a specific minute"""
+
+    minute: float  # Can be decimal like 45.5, 90.5 for added time
+    value: int  # Momentum value (positive favors home, negative favors away)
+
+
+class FootballGraphSchema(BaseModel):
+    """Complete football graph/momentum data"""
+
+    graphPoints: List[GraphPointSchema]
+    periodTime: int  # Length of each period (usually 45 minutes)
+    overtimeLength: int  # Length of overtime periods (usually 15 minutes)
+    periodCount: int  # Number of periods (usually 2 for football)

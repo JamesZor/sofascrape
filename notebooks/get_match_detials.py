@@ -268,7 +268,7 @@ def stats_main():
 class MarketValueSchema(BaseModel):
     """Player market value information"""
 
-    value: int
+    value: Optional[int] = None
     currency: str
 
 
@@ -403,13 +403,152 @@ def process_lineup_pydantic(data):
         print(f"Failed with error : {str(e)}.")
 
 
-if __name__ == "__main__":
-    ### Set up for the notebook
+def main_lineup():
     nbu = NotebookUtils(NoteBookType.FOOTBALL)
     matchid = 12436870
     playerid = 149380  # Harry Maguire
     linkT = LinkType.LINEUP
     raw = nbu.load(file_name=f"{linkT.value}_{matchid}")
     process_lineup_pydantic(raw)
+
+
+########################################
+#### incidents
+########################################
+class CoordinatesSchema(BaseModel):
+    """X, Y coordinates on the pitch"""
+
+    x: float
+    y: float
+
+
+class PassingNetworkActionSchema(BaseModel):
+    """Individual action in passing network leading to goal"""
+
+    player: LineupPlayerSchema  # Reuse from lineup schemas
+    eventType: str  # "pass", "ball-movement", "goal"
+    time: int
+    playerCoordinates: CoordinatesSchema
+    passEndCoordinates: Optional[CoordinatesSchema] = None
+    gkCoordinates: Optional[CoordinatesSchema] = None
+    goalShotCoordinates: Optional[CoordinatesSchema] = None
+    goalMouthCoordinates: Optional[CoordinatesSchema] = None
+    goalkeeper: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    isHome: bool
+    isAssist: Optional[bool] = None
+    bodyPart: Optional[str] = None  # "left-foot", "right-foot", "head"
+    goalType: Optional[str] = None  # "regular", "penalty", "own-goal"
+
+
+class PeriodIncidentSchema(BaseModel):
+    """Period incidents (HT, FT)"""
+
+    text: str  # "HT", "FT"
+    homeScore: int
+    awayScore: int
+    isLive: bool
+    time: int
+    addedTime: int
+    timeSeconds: int
+    reversedPeriodTime: int
+    reversedPeriodTimeSeconds: int
+    periodTimeSeconds: int
+    incidentType: str = "period"
+
+
+class InjuryTimeIncidentSchema(BaseModel):
+    """Injury time incidents"""
+
+    length: int
+    time: int
+    addedTime: int
+    reversedPeriodTime: int
+    incidentType: str = "injuryTime"
+
+
+class SubstitutionIncidentSchema(BaseModel):
+    """Substitution incidents"""
+
+    playerIn: LineupPlayerSchema  # Reuse from lineup schemas
+    playerOut: LineupPlayerSchema  # Reuse from lineup schemas
+    id: int
+    time: int
+    addedTime: Optional[int] = None
+    injury: bool
+    isHome: bool
+    incidentClass: str
+    reversedPeriodTime: int
+    incidentType: str = "substitution"
+
+
+class CardIncidentSchema(BaseModel):
+    """Card incidents (yellow, red)"""
+
+    player: LineupPlayerSchema  # Reuse from lineup schemas
+    playerName: str
+    reason: str
+    rescinded: bool
+    id: int
+    time: int
+    isHome: bool
+    incidentClass: str  # "yellow", "red"
+    reversedPeriodTime: int
+    incidentType: str = "card"
+
+
+class GoalIncidentSchema(BaseModel):
+    """Goal incidents"""
+
+    homeScore: int
+    awayScore: int
+    player: LineupPlayerSchema  # Reuse from lineup schemas
+    assist1: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    assist2: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    footballPassingNetworkAction: Optional[List[PassingNetworkActionSchema]] = None
+    id: int
+    time: int
+    isHome: bool
+    incidentClass: str
+    reversedPeriodTime: int
+    incidentType: str = "goal"
+
+
+class TeamColorsIncidentSchema(BaseModel):
+    """Team colors in incidents"""
+
+    goalkeeperColor: PlayerColorSchema  # Reuse from lineup
+    playerColor: PlayerColorSchema
+
+
+class FootballIncidentsSchema(BaseModel):
+    """Complete football incidents data"""
+
+    incidents: List[Any]  # Mixed list of different incident types
+    home: TeamColorsIncidentSchema
+    away: TeamColorsIncidentSchema
+
+    class Config:
+        # Allow extra fields for future incident types
+        extra = "allow"
+
+
+def process_incidents_pydantic(data):
+    try:
+        results = FootballIncidentsSchema.model_validate(data)
+
+        for event in results.incidents[0:5]:
+            print(json.dumps(event, indent=3))
+    except Exception as e:
+        print(f"Failed with error : {str(e)}.")
+
+
+if __name__ == "__main__":
+    ### Set up for the notebook
+    nbu = NotebookUtils(NoteBookType.FOOTBALL)
+    matchid = 12436870
+    playerid = 149380  # Harry Maguire
+    linkT = LinkType.INCIDENTS
+    raw = nbu.load(file_name=f"{linkT.value}_{matchid}")
+    process_incidents_pydantic(raw)
 #    print(json.dumps(raw, indent=8))
 #    process_stats_pydantic(raw_stats)
