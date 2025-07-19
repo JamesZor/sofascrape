@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -366,11 +366,11 @@ class LineupPlayerSchema(BaseModel):
     slug: Optional[str] = None
     shortName: Optional[str] = None
     position: Optional[str] = None
-    jerseyNumber: Optional[str] = None  # Make optional - some players don't have this
+    jerseyNumber: Optional[str] = None
     height: Optional[int] = None
     userCount: Optional[int] = None
     sofascoreId: Optional[str] = None
-    country: CountrySchema  # Reuse from general schemas
+    country: Optional[CountrySchema] = None
     marketValueCurrency: Optional[str] = None
     dateOfBirthTimestamp: Optional[int] = None
     proposedMarketValueRaw: Optional[MarketValueSchema] = None
@@ -533,10 +533,19 @@ class TeamColorsIncidentSchema(BaseModel):
     playerColor: PlayerColorSchema
 
 
+IncidentType = Union[
+    PeriodIncidentSchema,
+    InjuryTimeIncidentSchema,
+    SubstitutionIncidentSchema,
+    CardIncidentSchema,
+    GoalIncidentSchema,
+]
+
+
 class FootballIncidentsSchema(BaseModel):
     """Complete football incidents data"""
 
-    incidents: List[Any]  # Mixed list of different incident types
+    incidents: List[IncidentType]  # Mixed list of different incident types
     home: TeamColorsIncidentSchema
     away: TeamColorsIncidentSchema
 

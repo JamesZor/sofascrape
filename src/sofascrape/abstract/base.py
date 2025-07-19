@@ -69,3 +69,37 @@ class BaseComponentScraper(ABC, Generic[T]):
                 f"tournamentid must be a positive integer. "
                 f"Got: {tournamentid=}, {type(tournamentid)=}"
             )
+
+
+class BaseMatchScraper(ABC):
+    def __init__(self, webdriver: MyWebDriver, matchid: int):
+        self.webdriver: MyWebDriver = webdriver
+        self.matchid: int = matchid
+        self.cfg: DictConfig = self._get_cfg()
+
+        self.raw_data: Optional[Dict] = None
+        self.data: Optional[T] = None
+
+    def _get_cfg(self) -> DictConfig:
+        with initialize(config_path="../conf/", version_base="1.3"):
+            cfg = compose(config_name="general")
+        return cfg
+
+    @abstractmethod
+    def scrape(self):
+        """Orchestrate scraping of all components for a match."""
+        pass
+
+
+class BaseSeasonScraper(ABC):
+    @abstractmethod
+    def scrape(self):
+        """Scrape all matches in a season."""
+        pass
+
+
+class BaseLeagueScraper(ABC):
+    @abstractmethod
+    def scrape(self):
+        """Scrape all seasons (and thus all matches) in a league."""
+        pass
