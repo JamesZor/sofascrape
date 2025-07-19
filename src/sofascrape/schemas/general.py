@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 
 ##############################
 # tournament
@@ -154,3 +154,94 @@ class EventSchema(BaseModel):
 
 class EventsListSchema(BaseModel):
     events: List[EventSchema]
+
+
+##############################
+# Football
+##############################
+
+
+class VenueCoordinatesSchema(BaseModel):
+    latitude: float
+    longitude: float
+
+
+class CitySchema(BaseModel):
+    name: str
+
+
+class StadiumSchema(BaseModel):
+    name: str
+    capacity: int
+
+
+class VenueSchema(BaseModel):
+    name: str
+    slug: str
+    capacity: int
+    id: int
+    city: CitySchema
+    venueCoordinates: VenueCoordinatesSchema
+    country: CountrySchema
+    stadium: StadiumSchema
+
+
+class ManagerSchema(BaseModel):
+    name: str
+    slug: str
+    shortName: str
+    id: int
+    country: CountrySchema
+
+
+class RefereeSchema(BaseModel):
+    name: str
+    slug: str
+    id: int
+    yellowCards: int
+    redCards: int
+    yellowRedCards: int
+    games: int
+    sport: SportSchema
+    country: CountrySchema
+
+
+class FootballTeamSchema(TeamSchema):
+    """Extended team schema for football with additional fields"""
+
+    fullName: Optional[str] = None
+    manager: Optional[ManagerSchema] = None
+    venue: Optional[VenueSchema] = None
+    class_: Optional[int] = Field(None, alias="class")
+
+
+class FootballTournamentSchema(TournamentSchema):
+    """Extended tournament schema for football"""
+
+    competitionType: Optional[int] = None
+
+
+class FootballEventSchema(EventSchema):
+    """Extended event schema for football with additional fields"""
+
+    attendance: Optional[int] = None
+    venue: Optional[VenueSchema] = None
+    referee: Optional[RefereeSchema] = None
+    defaultPeriodCount: Optional[int] = None
+    defaultPeriodLength: Optional[int] = None
+    defaultOvertimeLength: Optional[int] = None
+    currentPeriodStartTimestamp: Optional[int] = None
+    fanRatingEvent: Optional[bool] = None
+    seasonStatisticsType: Optional[str] = None
+    showTotoPromo: Optional[bool] = None
+
+    # Override team fields to use football-specific team schema
+    homeTeam: FootballTeamSchema
+    awayTeam: FootballTeamSchema
+
+    # Override tournament to use football-specific tournament schema
+    tournament: FootballTournamentSchema
+
+
+class FootballDetailsSchema(BaseModel):
+    event: FootballEventSchema
