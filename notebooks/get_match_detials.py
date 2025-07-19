@@ -252,13 +252,164 @@ def process_stats_pydantic(data):
         print(f"Failed with error : {str(e)}.")
 
 
-if __name__ == "__main__":
-    ### Set up for the notebook
-    nbu = NotebookUtils(NoteBookType.FOOTBALL)
+def stats_main():
     matchid = 12436870
     playerid = 149380  # Harry Maguire
     linkT = LinkType.STATS
     raw_stats = nbu.load(file_name=f"{linkT.value}_{matchid}")
     process_stats_pydantic(raw_stats)
-#    print(all_stats[0])
-#    print(json.dumps(all_stats, indent=6))
+
+
+########################################
+#### lineup
+########################################
+
+
+class MarketValueSchema(BaseModel):
+    """Player market value information"""
+
+    value: int
+    currency: str
+
+
+class PlayerStatisticsSchema(BaseModel):
+    """Player match statistics - all fields optional as different players have different stats"""
+
+    totalPass: Optional[int] = None
+    accuratePass: Optional[int] = None
+    totalLongBalls: Optional[int] = None
+    accurateLongBalls: Optional[int] = None
+    goalAssist: Optional[int] = None
+    totalCross: Optional[int] = None
+    accurateCross: Optional[int] = None
+    aerialLost: Optional[int] = None
+    aerialWon: Optional[int] = None
+    duelLost: Optional[int] = None
+    duelWon: Optional[int] = None
+    challengeLost: Optional[int] = None
+    totalContest: Optional[int] = None
+    wonContest: Optional[int] = None
+    dispossessed: Optional[int] = None
+    totalClearance: Optional[int] = None
+    outfielderBlock: Optional[int] = None
+    interceptionWon: Optional[int] = None
+    totalTackle: Optional[int] = None
+    wasFouled: Optional[int] = None
+    fouls: Optional[int] = None
+    totalOffside: Optional[int] = None
+    minutesPlayed: Optional[int] = None
+    touches: Optional[int] = None
+    rating: Optional[float] = None
+    possessionLostCtrl: Optional[int] = None
+    expectedGoals: Optional[float] = None
+    expectedAssists: Optional[float] = None
+    keyPass: Optional[int] = None
+    ratingVersions: Optional[Dict[str, float]] = None
+
+    # Goalkeeper specific stats
+    goodHighClaim: Optional[int] = None
+    savedShotsFromInsideTheBox: Optional[int] = None
+    saves: Optional[int] = None
+    totalKeeperSweeper: Optional[int] = None
+    accurateKeeperSweeper: Optional[int] = None
+    goalsPrevented: Optional[float] = None
+    errorLeadToAShot: Optional[int] = None
+    punches: Optional[int] = None
+
+    # Attacking stats
+    bigChanceCreated: Optional[int] = None
+    bigChanceMissed: Optional[int] = None
+    shotOffTarget: Optional[int] = None
+    onTargetScoringAttempt: Optional[int] = None
+    blockedScoringAttempt: Optional[int] = None
+    goals: Optional[int] = None
+
+
+class LineupPlayerSchema(BaseModel):
+    """Player information in lineup"""
+
+    name: str
+    firstName: Optional[str] = None
+    lastName: Optional[str] = None
+    slug: str
+    shortName: str
+    position: str
+    jerseyNumber: Optional[str] = None  # Make optional - some players don't have this
+    height: Optional[int] = None
+    userCount: Optional[int] = None
+    sofascoreId: Optional[str] = None
+    id: int
+    country: schemas.CountrySchema  # Reuse from general schemas
+    marketValueCurrency: Optional[str] = None
+    dateOfBirthTimestamp: Optional[int] = None
+    proposedMarketValueRaw: Optional[MarketValueSchema] = None
+
+
+class LineupPlayerEntrySchema(BaseModel):
+    """Complete player entry with team info and stats"""
+
+    player: LineupPlayerSchema
+    teamId: int
+    shirtNumber: int
+    jerseyNumber: str
+    position: str
+    substitute: bool
+    captain: Optional[bool] = None
+    statistics: PlayerStatisticsSchema
+
+
+class PlayerColorSchema(BaseModel):
+    """Team kit colors"""
+
+    primary: str
+    number: str
+    outline: str
+    fancyNumber: str
+
+
+class MissingPlayerSchema(BaseModel):
+    """Information about missing/unavailable players"""
+
+    player: LineupPlayerSchema
+    type: str  # "missing"
+    reason: int
+
+
+class TeamLineupSchema(BaseModel):
+    """Complete team lineup information"""
+
+    players: List[LineupPlayerEntrySchema]
+    supportStaff: List[Any] = []  # Usually empty, can be more specific if needed
+    formation: str
+    playerColor: PlayerColorSchema
+    goalkeeperColor: PlayerColorSchema
+    missingPlayers: List[MissingPlayerSchema] = []
+
+
+class FootballLineupSchema(BaseModel):
+    """Complete football lineup data"""
+
+    confirmed: bool
+    home: TeamLineupSchema
+    away: TeamLineupSchema
+
+
+def process_lineup_pydantic(data):
+    try:
+        results = FootballLineupSchema.model_validate(data)
+
+        print(results.model_dump_json(indent=6))
+    except Exception as e:
+        print(f"Failed with error : {str(e)}.")
+
+
+if __name__ == "__main__":
+    ### Set up for the notebook
+    nbu = NotebookUtils(NoteBookType.FOOTBALL)
+    matchid = 12436870
+    playerid = 149380  # Harry Maguire
+    linkT = LinkType.LINEUP
+    raw = nbu.load(file_name=f"{linkT.value}_{matchid}")
+    process_lineup_pydantic(raw)
+#    print(json.dumps(raw, indent=8))
+#    process_stats_pydantic(raw_stats)
