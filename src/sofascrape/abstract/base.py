@@ -5,7 +5,7 @@ from typing import Dict, Generic, Optional, TypeVar
 from hydra import compose, initialize
 from omegaconf import DictConfig
 from pydantic import BaseModel
-from webdriver import MyWebDriver
+from webdriver import ManagerWebdriver, MyWebDriver
 
 logger = logging.getLogger(__name__)
 
@@ -17,10 +17,10 @@ class BaseComponentScraper(ABC, Generic[T]):
     Lower level componet. Gets the data and parse it.
     """
 
-    def __init__(self, webdriver: MyWebDriver):
+    def __init__(self, webdriver: MyWebDriver, cfg: Optional[DictConfig] = None):
         self.webdriver: MyWebDriver = webdriver
-        self.cfg: DictConfig = self._get_cfg()
 
+        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
         self.raw_data: Optional[Dict] = None
         self.data: Optional[T] = None
 
@@ -72,13 +72,12 @@ class BaseComponentScraper(ABC, Generic[T]):
 
 
 class BaseMatchScraper(ABC):
-    def __init__(self, webdriver: MyWebDriver, matchid: int):
+    def __init__(
+        self, webdriver: MyWebDriver, matchid: int, cfg: Optional[DictConfig] = None
+    ):
         self.webdriver: MyWebDriver = webdriver
         self.matchid: int = matchid
-        self.cfg: DictConfig = self._get_cfg()
-
-        self.raw_data: Optional[Dict] = None
-        self.data: Optional[T] = None
+        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
 
     def _get_cfg(self) -> DictConfig:
         with initialize(config_path="../conf/", version_base="1.3"):
@@ -92,6 +91,17 @@ class BaseMatchScraper(ABC):
 
 
 class BaseSeasonScraper(ABC):
+    def __init__(self, tournamentid: int, seasonid: int) -> None:
+        self.tournamentid: int = tournamentid
+        self.seasonid: int = seasonid
+        self.mw: ManagerWebdriver = ManagerWebdriver()
+        self.cfg: DictConfig = self._get_cfg()
+
+    def _get_cfg(self) -> DictConfig:
+        with initialize(config_path="../conf/", version_base="1.3"):
+            cfg = compose(config_name="general")
+        return cfg
+
     @abstractmethod
     def scrape(self):
         """Scrape all matches in a season."""

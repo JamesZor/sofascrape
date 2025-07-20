@@ -2,6 +2,7 @@ from .eventComponent import EventFootallComponentScraper
 from .graphComponent import FootballGraphComponentScraper
 from .incidentsComponent import FootballIncidentsComponentScraper
 from .lineupComonent import FootballLineupComponentScraper
+from .matchScraper import FootballMatchScraper
 from .statsComponent import FootballStatsComponentScraper
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "FootballLineupComponentScraper",
     "FootballIncidentsComponentScraper",
     "FootballGraphComponentScraper",
+    "FootballMatchScraper",
 ]

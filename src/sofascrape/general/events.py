@@ -15,7 +15,11 @@ class EventsComponentScraper(BaseComponentScraper):
     """football events, might need to be changed for other sports/ events"""
 
     def __init__(
-        self, webdriver: MyWebDriver, tournamentid: int, seasonid: int
+        self,
+        webdriver: MyWebDriver,
+        tournamentid: int,
+        seasonid: int,
+        cfg: Optional[DictConfig] = None,
     ) -> None:
         """Initialize the tournament scraper.
         Args:
@@ -26,7 +30,7 @@ class EventsComponentScraper(BaseComponentScraper):
         Raises:
             ValueError: If tournamentid is invalid or webdriver is wrong type
         """
-        super().__init__(webdriver=webdriver)
+        super().__init__(webdriver=webdriver, cfg=cfg)
 
         self.tournamentid: int = tournamentid
         self.seasonid: int = seasonid

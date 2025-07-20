@@ -57,5 +57,6 @@ def test_process_sweep(matchid):
     result = incidents_scraper.process()
 
     assert result is not None, "Error getting the data"
+    print(result)
 
     d1.close()

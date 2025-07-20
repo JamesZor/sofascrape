@@ -167,54 +167,6 @@ class FootballMatchResultDetailed(BaseModel):
         return f"Failed components: {', '.join(failed)}"
 
 
-# Helper functions for creating results
-def create_component_error(
-    component_name: str,
-    status: ComponentStatus = ComponentStatus.NOT_ATTEMPTED,
-    error_message: Optional[str] = None,
-) -> ComponentError:
-    """Create a component error object"""
-    from datetime import datetime
-
-    return ComponentError(
-        component=component_name,
-        status=status,
-        error_message=error_message,
-        attempted_at=(
-            str(datetime.utcnow()) if status != ComponentStatus.NOT_ATTEMPTED else None
-        ),
-    )
-
-
-def create_empty_match_errors(match_id: int) -> MatchScrapingErrors:
-    """Create empty error structure for a match"""
-    return MatchScrapingErrors(
-        base=create_component_error("base"),
-        stats=create_component_error("stats"),
-        lineup=create_component_error("lineup"),
-        incidents=create_component_error("incidents"),
-        graph=create_component_error("graph"),
-    )
-
-
-####
-@dataclass
-class MatchComponentResult:
-    """Result from a component scraper"""
-
-    component_type: MatchComponentType
-    success: bool
-    data: Optional[ComponentDataType] = None
-    error: Optional[str] = None
-
-
-class ComponentResult(BaseModel):
-    component_type: MatchComponentType
-    success: bool
-    data: Optional[ComponentDataType] = None
-    error: Optional[str] = None
-
-
 class FootballMatchScraper(BaseMatchScraper):
 
     def __init__(self, webdriver: MyWebDriver, matchid: int) -> None:
@@ -248,11 +200,11 @@ class FootballMatchScraper(BaseMatchScraper):
     def _create_empty_match_errors(self) -> MatchScrapingErrors:
         """Create empty error structure for a match"""
         return MatchScrapingErrors(
-            base=create_component_error("base"),
-            stats=create_component_error("stats"),
-            lineup=create_component_error("lineup"),
-            incidents=create_component_error("incidents"),
-            graph=create_component_error("graph"),
+            base=self._create_component_error("base"),
+            stats=self._create_component_error("stats"),
+            lineup=self._create_component_error("lineup"),
+            incidents=self._create_component_error("incidents"),
+            graph=self._create_component_error("graph"),
         )
 
     def _scrape_single_component(self, component_type: MatchComponentType) -> tuple:
@@ -282,7 +234,6 @@ class FootballMatchScraper(BaseMatchScraper):
     def scrape(
         self,
         components: Optional[List[MatchComponentType]] = None,
-        detailed_errors: bool = False,
     ) -> FootballMatchResultDetailed:
         """
         Main scrape method returning clean Pydantic result
@@ -342,50 +293,6 @@ class FootballMatchScraper(BaseMatchScraper):
             errors=errors,
         )
 
-    #    def scrape_componet(
-    #        self, component_type: MatchComponentType
-    #    ) -> MatchComponentResult:
-    #        """Scrape a single component"""
-    #        try:
-    #            scraper = component_type.value(self.webdriver, self.matchid)
-    #            # Process the component
-    #            data = scraper.process()
-    #
-    #            if data is not None:
-    #                logger.info(
-    #                    f"Successfully scraped {component_type.value} for match {self.matchid}"
-    #                )
-    #                return MatchComponentResult(
-    #                    component_type=component_type, success=True, data=data
-    #                )
-    #            else:
-    #                error_msg = f"No data returned for {component_type.value}"
-    #                logger.warning(f"{error_msg} for match {self.matchid}")
-    #                return MatchComponentResult(
-    #                    component_type=component_type, success=False, error=error_msg
-    #                )
-    #
-    #        except Exception as e:
-    #            error_msg = f"Failed to scrape {component_type.value}: {str(e)}"
-    #            logger.error(f"{error_msg} for match {self.matchid}")
-    #            return MatchComponentResult(
-    #                component_type=component_type, success=False, error=error_msg
-    #            )
-    #
-    #    def scrape(self) -> Dict[MatchComponentType, MatchComponentResult]:
-    #
-    #        # Scrape required components first
-    #        for component_type in self.available_components:
-    #            result = self.scrape_componet(component_type)
-    #            self.results[component_type] = result
-    #
-    #            if not result.success:
-    #                logger.error(
-    #                    f"Required component {component_type.value} failed for match {self.matchid}"
-    #                )
-    #
-    #        return self.results
-
     def get_summary(self) -> Dict[str, Any]:
         """Get a summary of scraping results"""
         successful = [
@@ -398,48 +305,51 @@ class FootballMatchScraper(BaseMatchScraper):
             "total_components": len(self.results),
             "successful_components": successful,
             "failed_components": failed,
-            "success_rate": f"{len(successful)}/{len(self.results)}",
         }
 
 
 if __name__ == "__main__":
     wm = ManagerWebdriver()
-    d1 = wm.spawn_webdriver()
+    driver = wm.spawn_webdriver()
     matchid = 12436870
     try:
-        # Create and run scraper
-        matchscraper = FootballMatchScraper(webdriver=d1, matchid=matchid)
-        results = matchscraper.scrape()
+        # Simple usage
+        match_scraper = FootballMatchScraper(webdriver=driver, matchid=matchid)
+        result = match_scraper.scrape()
 
-        # Print summary
-        summary = matchscraper.get_summary()
-        print("=== Scraping Summary ===")
-        print(summary)
-        # print(json.dumps(summary, indent=2))
+        print(f"Match ID: {result.match_id}")
+        print(f"Success rate: {result.success_rate}")
 
-        # Print successful data (just the keys, not full data)
-        successful_data = matchscraper.get_successful_data()
-        print(f"\n=== Successfully Scraped Components ===")
-        for component_type, data in successful_data.items():
-            print(f"{component_type.name}: {type(data).__name__}")
+        # Check if we have base data
+        if result.has_base_data:
+            match_info = result.get_match_info()
+            print(f"Match: {match_info['home_team']} vs {match_info['away_team']}")
+            print(f"Score: {match_info['score']}")
 
-        # Example: Access specific component data
-        if MatchComponentType.BASE in successful_data:
-            base_data = successful_data[MatchComponentType.BASE]
-            if hasattr(base_data, "event"):
-                event = base_data.event
-                print(f"\nMatch: {event.homeTeam.name} vs {event.awayTeam.name}")
-                print(
-                    f"Score: {event.homeScore.current if event.homeScore else 0}-{event.awayScore.current if event.awayScore else 0}"
-                )
+        # Check individual components
+        if result.base:
+            print("✓ Base data available")
+        if result.stats:
+            print("✓ Stats data available")
+        if result.lineup:
+            print("✓ Lineup data available")
+        if result.incidents:
+            print("✓ Incidents data available")
+        if result.graph:
+            print("✓ Graph data available")
 
-        # Example: Print one component's data
-        if MatchComponentType.STATS in successful_data:
-            print(f"\n=== Stats Data Sample ===")
-            stats_data = successful_data[MatchComponentType.STATS]
-            print(f"Number of periods: {len(stats_data.statistics)}")
+        # Show errors if any
+        if result.errors:
+            print(f"Errors: {result.errors}")
 
-    except Exception as e:
-        logger.error(f"Error in main execution: {str(e)}")
+        # Detailed errors example
+        print("\n=== Detailed Errors Example ===")
+        print(f"Error summary: {result.get_error_summary()}")
+        print(f"Successful: {result.errors.successful_components}")
+        print(f"Failed: {result.errors.failed_components}")
+
+        print("\n=== Detailed Example ===")
+        print(result.model_dump_json(indent=8))
+
     finally:
-        d1.close()
+        driver.close()

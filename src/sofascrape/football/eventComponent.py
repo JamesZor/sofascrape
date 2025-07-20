@@ -1,6 +1,7 @@
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
+from omegaconf import DictConfig
 from pydantic import ValidationError
 from webdriver import MyWebDriver
 
@@ -13,8 +14,10 @@ logger = logging.getLogger(__name__)
 class EventFootallComponentScraper(BaseComponentScraper):
     """For football details of an event."""
 
-    def __init__(self, webdriver: MyWebDriver, matchid=int) -> None:
-        super().__init__(webdriver=webdriver)
+    def __init__(
+        self, webdriver: MyWebDriver, matchid=int, cfg: Optional[DictConfig] = None
+    ) -> None:
+        super().__init__(webdriver=webdriver, cfg=cfg)
         self.matchid: int = matchid
         self.page_url: str = self.cfg.links.football_base_match.format(match_id=matchid)
 

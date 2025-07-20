@@ -1,4 +1,6 @@
-from typing import Any, Dict, List, Optional, Union
+from datetime import datetime
+from enum import Enum
+from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -456,6 +458,7 @@ class PassingNetworkActionSchema(BaseModel):
 class PeriodIncidentSchema(BaseModel):
     """Period incidents (HT, FT)"""
 
+    incidentType: Literal["period"] = "period"  # Use Literal instead of str
     text: str  # "HT", "FT"
     homeScore: int
     awayScore: int
@@ -466,22 +469,22 @@ class PeriodIncidentSchema(BaseModel):
     reversedPeriodTime: int
     reversedPeriodTimeSeconds: int
     periodTimeSeconds: int
-    incidentType: str = "period"
 
 
 class InjuryTimeIncidentSchema(BaseModel):
     """Injury time incidents"""
 
+    incidentType: Literal["injuryTime"] = "injuryTime"  # Use Literal instead of str
     length: int
     time: int
     addedTime: int
     reversedPeriodTime: int
-    incidentType: str = "injuryTime"
 
 
 class SubstitutionIncidentSchema(BaseModel):
     """Substitution incidents"""
 
+    incidentType: Literal["substitution"] = "substitution"  # Use Literal instead of str
     playerIn: LineupPlayerSchema  # Reuse from lineup schemas
     playerOut: LineupPlayerSchema  # Reuse from lineup schemas
     id: int
@@ -491,27 +494,44 @@ class SubstitutionIncidentSchema(BaseModel):
     isHome: bool
     incidentClass: str
     reversedPeriodTime: int
-    incidentType: str = "substitution"
 
 
 class CardIncidentSchema(BaseModel):
     """Card incidents (yellow, red)"""
 
-    player: LineupPlayerSchema  # Reuse from lineup schemas
-    playerName: str
-    reason: str
-    rescinded: bool
-    id: int
-    time: int
-    isHome: bool
-    incidentClass: str  # "yellow", "red"
-    reversedPeriodTime: int
-    incidentType: str = "card"
+    incidentType: Literal["card"] = "card"  # Use Literal instead of str
+    # Make fields optional that might not be present in the data
+    player: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    playerName: Optional[str] = None
+    reason: Optional[str] = None
+    rescinded: Optional[bool] = None
+    id: Optional[int] = None
+    time: Optional[int] = None
+    isHome: Optional[bool] = None
+    incidentClass: Optional[str] = None  # "yellow", "red"
+    reversedPeriodTime: Optional[int] = None
+
+
+class VarDecisionIncidentSchema(BaseModel):
+    """VAR decision incidents"""
+
+    incidentType: Literal["varDecision"] = "varDecision"
+    # Based on the error, these incidents have at least 'confirmed' and 'play...' fields
+    confirmed: Optional[bool] = None
+    # Add other fields as optional since we don't know the exact structure
+    player: Optional[LineupPlayerSchema] = None
+    time: Optional[int] = None
+    isHome: Optional[bool] = None
+    incidentClass: Optional[str] = None
+    reversedPeriodTime: Optional[int] = None
+    decision: Optional[str] = None
+    reason: Optional[str] = None
 
 
 class GoalIncidentSchema(BaseModel):
     """Goal incidents"""
 
+    incidentType: Literal["goal"] = "goal"  # Use Literal instead of str
     homeScore: int
     awayScore: int
     player: LineupPlayerSchema  # Reuse from lineup schemas
@@ -523,7 +543,6 @@ class GoalIncidentSchema(BaseModel):
     isHome: bool
     incidentClass: str
     reversedPeriodTime: int
-    incidentType: str = "goal"
 
 
 class TeamColorsIncidentSchema(BaseModel):
@@ -533,19 +552,24 @@ class TeamColorsIncidentSchema(BaseModel):
     playerColor: PlayerColorSchema
 
 
-IncidentType = Union[
-    PeriodIncidentSchema,
-    InjuryTimeIncidentSchema,
-    SubstitutionIncidentSchema,
-    CardIncidentSchema,
-    GoalIncidentSchema,
+# Add discriminator to the Union using Annotated
+IncidentType = Annotated[
+    Union[
+        PeriodIncidentSchema,
+        InjuryTimeIncidentSchema,
+        SubstitutionIncidentSchema,
+        CardIncidentSchema,
+        GoalIncidentSchema,
+        VarDecisionIncidentSchema,
+    ],
+    Field(discriminator="incidentType"),
 ]
 
 
 class FootballIncidentsSchema(BaseModel):
     """Complete football incidents data"""
 
-    incidents: List[IncidentType]  # Mixed list of different incident types
+    incidents: List[IncidentType]  # Remove discriminator from here
     home: TeamColorsIncidentSchema
     away: TeamColorsIncidentSchema
 
@@ -573,3 +597,133 @@ class FootballGraphSchema(BaseModel):
     periodTime: int  # Length of each period (usually 45 minutes)
     overtimeLength: int  # Length of overtime periods (usually 15 minutes)
     periodCount: int  # Number of periods (usually 2 for football)
+
+
+##############################
+# football match
+##############################
+
+
+class ComponentStatus(str, Enum):
+    """Status of individual component scraping"""
+
+    SUCCESS = "success"
+    FAILED = "failed"
+    NOT_ATTEMPTED = "not_attempted"
+
+
+class ComponentError(BaseModel):
+    """Individual component error details"""
+
+    component: str
+    status: ComponentStatus
+    error_message: Optional[str] = None
+    attempted_at: Optional[str] = None  # timestamp
+
+
+class MatchScrapingErrors(BaseModel):
+    """Detailed error tracking for all components"""
+
+    base: ComponentError
+    stats: ComponentError
+    lineup: ComponentError
+    incidents: ComponentError
+    graph: ComponentError
+
+    @property
+    def has_errors(self) -> bool:
+        """Check if any component failed"""
+        return any(
+            error.status == ComponentStatus.FAILED
+            for error in [
+                self.base,
+                self.stats,
+                self.lineup,
+                self.incidents,
+                self.graph,
+            ]
+        )
+
+    @property
+    def successful_components(self) -> List[str]:
+        """Get list of successful component names"""
+        return [
+            error.component
+            for error in [
+                self.base,
+                self.stats,
+                self.lineup,
+                self.incidents,
+                self.graph,
+            ]
+            if error.status == ComponentStatus.SUCCESS
+        ]
+
+    @property
+    def failed_components(self) -> List[str]:
+        """Get list of failed component names"""
+        return [
+            error.component
+            for error in [
+                self.base,
+                self.stats,
+                self.lineup,
+                self.incidents,
+                self.graph,
+            ]
+            if error.status == ComponentStatus.FAILED
+        ]
+
+
+class FootballMatchResultDetailed(BaseModel):
+    """Complete football match data with detailed error tracking"""
+
+    # Match metadata
+    match_id: int
+    scraped_at: str = Field(default_factory=lambda: str(datetime.now()))
+
+    # Component data (None if failed/not attempted)
+    base: Optional[FootballDetailsSchema] = None
+    stats: Optional[FootballStatsSchema] = None
+    lineup: Optional[FootballLineupSchema] = None
+    incidents: Optional[FootballIncidentsSchema] = None
+    graph: Optional[FootballGraphSchema] = None
+
+    # Detailed error tracking
+    errors: MatchScrapingErrors
+
+    @property
+    def success_rate(self) -> str:
+        """Get success rate as string"""
+        successful = len(self.errors.successful_components)
+        total = successful + len(self.errors.failed_components)
+        return f"{successful}/{total}"
+
+    @property
+    def has_base_data(self) -> bool:
+        """Check if base data is available"""
+        return (
+            self.base is not None and self.errors.base.status == ComponentStatus.SUCCESS
+        )
+
+    def get_match_info(self) -> Optional[Dict]:
+        """Get basic match info from base data"""
+        if not self.base:
+            return None
+
+        event = self.base.event
+        return {
+            "home_team": event.homeTeam.name,
+            "away_team": event.awayTeam.name,
+            "score": f"{event.homeScore.current if event.homeScore else 0}-{event.awayScore.current if event.awayScore else 0}",
+            "status": event.status.description,
+            "venue": event.venue.name if event.venue else None,
+        }
+
+    def get_error_summary(self) -> str:
+        """Get a summary of all errors"""
+        if not self.errors.has_errors:
+            return "No errors"
+
+        failed = self.errors.failed_components
+        return f"Failed components: {', '.join(failed)}"
