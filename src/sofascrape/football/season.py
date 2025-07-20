@@ -1,11 +1,9 @@
 import logging
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import List
 
-from pydantic import BaseModel
 from tqdm import tqdm
 from webdriver import ManagerWebdriver, MyWebDriver
 
@@ -17,39 +15,6 @@ from sofascrape.general import EventsComponentScraper
 logger = logging.getLogger(__name__)
 
 
-class SeasonEventSchema(BaseModel):
-    """Individual match result in a season"""
-
-    tournament_id: int
-    season_id: int
-    match_id: int
-    scraped_at: str
-    success: bool
-    data: Optional[schemas.FootballMatchResultDetailed] = None  # Use the simple version
-    error: Optional[str] = None
-
-
-class SeasonScrapingResult(BaseModel):
-    """Complete season scraping result"""
-
-    tournament_id: int
-    season_id: int
-    total_matches: int
-    successful_matches: int
-    failed_matches: int
-    matches: List[SeasonEventSchema]
-    scraping_duration: float  # seconds
-    errors_summary: List[str] = []
-
-    @property
-    def success_rate(self) -> str:
-        """Get success rate as percentage"""
-        if self.total_matches == 0:
-            return "0%"
-        percentage = (self.successful_matches / self.total_matches) * 100
-        return f"{percentage:.1f}%"
-
-
 class SeasonFootballScraper(BaseSeasonScraper):
     """Scraper for all matches in a football season"""
 
@@ -57,7 +22,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
         super().__init__(tournamentid=tournament_id, seasonid=season_id)
         self.tournament_id = tournament_id
         self.season_id = season_id
-        self.matches: List[SeasonEventSchema] = []
+        self.matches: List[schemas.SeasonEventSchema] = []
         self.valid_match_ids: List[int] = []
 
     def _get_events(self) -> bool:
@@ -96,10 +61,8 @@ class SeasonFootballScraper(BaseSeasonScraper):
 
     def _scrape_single_match(
         self, match_id: int, driver: MyWebDriver
-    ) -> SeasonEventSchema:
+    ) -> schemas.SeasonEventSchema:
         """Scrape a single match"""
-        start_time = datetime.now()
-
         try:
             match_scraper = FootballMatchScraper(
                 webdriver=driver, matchid=match_id, cfg=self.cfg
@@ -114,7 +77,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
                 f"Match {match_id}: {'✓' if success else '✗'} ({result.success_rate})"
             )
 
-            return SeasonEventSchema(
+            return schemas.SeasonEventSchema(
                 tournament_id=self.tournament_id,
                 season_id=self.season_id,
                 match_id=match_id,
@@ -128,7 +91,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
             error_msg = f"Exception scraping match {match_id}: {str(e)}"
             logger.error(error_msg)
 
-            return SeasonEventSchema(
+            return schemas.SeasonEventSchema(
                 tournament_id=self.tournament_id,
                 season_id=self.season_id,
                 match_id=match_id,
@@ -137,7 +100,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
                 error=error_msg,
             )
 
-    def process_events_sequential(self) -> SeasonScrapingResult:
+    def process_events_sequential(self) -> schemas.SeasonScrapingResult:
         """Process all events sequentially (safer but slower)"""
         start_time = datetime.now()
 
@@ -171,7 +134,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
         failed = len(matches) - successful
         duration = (datetime.now() - start_time).total_seconds()
 
-        return SeasonScrapingResult(
+        return schemas.SeasonScrapingResult(
             tournament_id=self.tournament_id,
             season_id=self.season_id,
             total_matches=len(matches),
@@ -181,7 +144,9 @@ class SeasonFootballScraper(BaseSeasonScraper):
             scraping_duration=duration,
         )
 
-    def process_events_threaded(self, max_workers: int = 10) -> SeasonScrapingResult:
+    def process_events_threaded(
+        self, max_workers: int = 10
+    ) -> schemas.SeasonScrapingResult:
         """Process events using threading (faster but more resource intensive)"""
         start_time = datetime.now()
 
@@ -245,7 +210,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
         failed = len(matches) - successful
         duration = (datetime.now() - start_time).total_seconds()
 
-        return SeasonScrapingResult(
+        return schemas.SeasonScrapingResult(
             tournament_id=self.tournament_id,
             season_id=self.season_id,
             total_matches=len(matches),
@@ -280,7 +245,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
         chunk_id: int,
         pbar: tqdm,
         progress_lock: threading.Lock,
-    ) -> List[SeasonEventSchema]:
+    ) -> List[schemas.SeasonEventSchema]:
         """Process a chunk of matches with progress updates"""
         results = []
 
@@ -305,7 +270,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
                     f"Chunk {chunk_id}: Failed to process match {match_id}: {str(e)}"
                 )
                 results.append(
-                    SeasonEventSchema(
+                    schemas.SeasonEventSchema(
                         tournament_id=self.tournament_id,
                         season_id=self.season_id,
                         match_id=match_id,
@@ -329,76 +294,10 @@ class SeasonFootballScraper(BaseSeasonScraper):
 
     def scrape(
         self, use_threading: bool = True, max_workers: int = 5
-    ) -> SeasonScrapingResult:
+    ) -> schemas.SeasonScrapingResult:
         """Main scraping method"""
+        self._get_events()
         if use_threading:
             return self.process_events_threaded(max_workers)
         else:
             return self.process_events_sequential()
-
-
-# Convenience functions
-def scrape_season(
-    tournament_id: int, season_id: int, use_threading: bool = True, max_workers: int = 5
-) -> SeasonScrapingResult:
-    """Scrape an entire season"""
-    scraper = SeasonFootballScraper(tournament_id, season_id)
-    return scraper.scrape(use_threading, max_workers)
-
-
-# Example usage
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-
-    # Premier League 24/25 season
-    tournament_id = 1
-    season_id = 61627
-
-    try:
-        # Quick test with just a few matches (sequential)
-        logger.info("Testing sequential processing...")
-        scraper = SeasonFootballScraper(tournament_id, season_id)
-
-        # Override for testing - just get first 5 completed matches
-        if scraper._get_events():
-            scraper.valid_match_ids = scraper.valid_match_ids[:5]  # Test with 5 matches
-            print(f"{scraper.valid_match_ids=}")
-            result = scraper.process_events_sequential()
-
-            print(f"\n=== Sequential Results ===")
-            print(f"Processed: {result.total_matches} matches")
-            print(f"Success rate: {result.success_rate}")
-            print(f"Duration: {result.scraping_duration:.1f} seconds")
-
-            # Show successful matches
-            for match in result.matches:
-                if match.success and match.data:
-                    info = match.data.get_match_info()
-                    if info:
-                        print(
-                            f"✓ {match.match_id}: {info['home_team']} vs {info['away_team']} ({info['score']})"
-                        )
-                    else:
-                        print(f"✓ {match.match_id}: Data available but no match info")
-                else:
-                    print(f"✗ {match.match_id}: {match.error}")
-
-        # Test threading (with same 5 matches)
-        logger.info("\nTesting threaded processing...")
-        scraper2 = SeasonFootballScraper(tournament_id, season_id)
-        if scraper2._get_events():
-            scraper2.valid_match_ids = scraper2.valid_match_ids[
-                :5
-            ]  # Test with 5 matches
-            result2 = scraper2.process_events_threaded(max_workers=3)
-
-            print(f"\n=== Threaded Results ===")
-            print(f"Processed: {result2.total_matches} matches")
-            print(f"Success rate: {result2.success_rate}")
-            print(f"Duration: {result2.scraping_duration:.1f} seconds")
-            print(
-                f"Speedup: {result.scraping_duration / result2.scraping_duration:.1f}x"
-            )
-
-    except Exception as e:
-        logger.error(f"Error in main: {str(e)}")

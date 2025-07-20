@@ -727,3 +727,39 @@ class FootballMatchResultDetailed(BaseModel):
 
         failed = self.errors.failed_components
         return f"Failed components: {', '.join(failed)}"
+
+
+##############################
+# football season
+##############################
+class SeasonEventSchema(BaseModel):
+    """Individual match result in a season"""
+
+    tournament_id: int
+    season_id: int
+    match_id: int
+    scraped_at: str
+    success: bool
+    data: Optional[FootballMatchResultDetailed] = None  # Use the simple version
+    error: Optional[str] = None
+
+
+class SeasonScrapingResult(BaseModel):
+    """Complete season scraping result"""
+
+    tournament_id: int
+    season_id: int
+    total_matches: int
+    successful_matches: int
+    failed_matches: int
+    matches: List[SeasonEventSchema]
+    scraping_duration: float  # seconds
+    errors_summary: List[str] = []
+
+    @property
+    def success_rate(self) -> str:
+        """Get success rate as percentage"""
+        if self.total_matches == 0:
+            return "0%"
+        percentage = (self.successful_matches / self.total_matches) * 100
+        return f"{percentage:.1f}%"
