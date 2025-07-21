@@ -91,11 +91,19 @@ class BaseMatchScraper(ABC):
 
 
 class BaseSeasonScraper(ABC):
-    def __init__(self, tournamentid: int, seasonid: int) -> None:
+    def __init__(
+        self,
+        tournamentid: int,
+        seasonid: int,
+        managerwebdriver: Optional[ManagerWebdriver] = None,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
         self.tournamentid: int = tournamentid
         self.seasonid: int = seasonid
-        self.mw: ManagerWebdriver = ManagerWebdriver()
-        self.cfg: DictConfig = self._get_cfg()
+        self.mw: ManagerWebdriver = (
+            managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
+        )
+        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
 
     def _get_cfg(self) -> DictConfig:
         with initialize(config_path="../conf/", version_base="1.3"):
@@ -109,6 +117,23 @@ class BaseSeasonScraper(ABC):
 
 
 class BaseLeagueScraper(ABC):
+    def __init__(
+        self,
+        tournamentid: int,
+        managerwebdriver: Optional[ManagerWebdriver] = None,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
+        self.tournamentid: int = tournamentid
+        self.mw: ManagerWebdriver = (
+            managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
+        )
+        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
+
+    def _get_cfg(self) -> DictConfig:
+        with initialize(config_path="../conf/", version_base="1.3"):
+            cfg = compose(config_name="general")
+        return cfg
+
     @abstractmethod
     def scrape(self):
         """Scrape all seasons (and thus all matches) in a league."""

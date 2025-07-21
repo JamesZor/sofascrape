@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import pytest
 from omegaconf import OmegaConf
@@ -16,9 +15,21 @@ season_id = 61627
 
 def test_basic_setup():
     season_scraper = SeasonFootballScraper(
-        tournament_id=tournament_id, season_id=season_id
+        tournamentid=tournament_id, seasonid=season_id
     )
     print(OmegaConf.to_yaml(season_scraper.cfg))
+
+
+def test_get_events():
+    season_scraper = SeasonFootballScraper(
+        tournamentid=tournament_id, seasonid=season_id
+    )
+    season_scraper._get_events()
+
+    for event in season_scraper.events_scraper.data.events[0:3]:
+        print(event.model_dump_json(indent=10))
+
+    print(season_scraper.valid_matchids[0:4])
 
 
 def test_process():
