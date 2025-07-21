@@ -44,6 +44,35 @@ def test_debug_scrape():
         print(match.data.base.model_dump_json(indent=4))
 
 
+def test_same_stats():
+
+    s1 = SeasonFootballScraper(tournamentid=tournament_id, seasonid=season_id)
+    s1._scrape_debug(use_threading=True, max_workers=3)
+
+    s2 = SeasonFootballScraper(tournamentid=tournament_id, seasonid=season_id)
+    s2._scrape_debug(use_threading=True, max_workers=3)
+
+    for i in range(len(s1.data.matches)):
+        print(s1.data.matches[i].match_id)
+        print(
+            f"{s1.data.matches[i].data.base.event.homeTeam.name}, {s1.data.matches[i].data.base.event.awayTeam.name}"
+        )
+
+        for j in range(
+            len(s1.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems)
+        ):
+
+            print(
+                f"{s1.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].home},{s1.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].away}."
+            )
+
+            print(
+                f"{s2.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].home},{s2.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].away}."
+            )
+
+        print("--- ----" * 20)
+
+
 def test_process():
 
     season_scraper = SeasonFootballScraper(

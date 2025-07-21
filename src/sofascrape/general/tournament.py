@@ -14,7 +14,12 @@ logger = logging.getLogger(__name__)
 
 class TournamentComponentScraper(BaseComponentScraper):
 
-    def __init__(self, tournamentid: int, webdriver: MyWebDriver) -> None:
+    def __init__(
+        self,
+        tournamentid: int,
+        webdriver: MyWebDriver,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
         """Initialize the tournament scraper.
 
         Args:
@@ -24,7 +29,7 @@ class TournamentComponentScraper(BaseComponentScraper):
         Raises:
             ValueError: If tournamentid is invalid or webdriver is wrong type
         """
-        super().__init__(webdriver=webdriver)
+        super().__init__(webdriver=webdriver, cfg=cfg)
 
         self.tournamentid: int = tournamentid
         self.webdriver: MyWebDriver = webdriver

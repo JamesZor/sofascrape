@@ -95,7 +95,6 @@ class LeagueFootballScraper(BaseLeagueScraper):
                         managerwebdriver=self.mw,
                         cfg=self.cfg,
                     )
-
                     results[str(season.year)]._scrape_debug()
 
         return results
