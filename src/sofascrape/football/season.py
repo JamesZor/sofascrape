@@ -4,13 +4,15 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import List, Optional
 
+from omegaconf import DictConfig
 from tqdm import tqdm
 from webdriver import ManagerWebdriver, MyWebDriver
 
 import sofascrape.schemas.general as schemas
 from sofascrape.abstract.base import BaseSeasonScraper
-from sofascrape.football import FootballMatchScraper
 from sofascrape.general import EventsComponentScraper
+
+from .matchScraper import FootballMatchScraper
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +20,19 @@ logger = logging.getLogger(__name__)
 class SeasonFootballScraper(BaseSeasonScraper):
     """Scraper for all matches in a football season"""
 
-    def __init__(self, tournamentid: int, seasonid: int) -> None:
-        super().__init__(tournamentid=tournamentid, seasonid=seasonid)
+    def __init__(
+        self,
+        tournamentid: int,
+        seasonid: int,
+        managerwebdriver: Optional[ManagerWebdriver] = None,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
+        super().__init__(
+            tournamentid=tournamentid,
+            seasonid=seasonid,
+            managerwebdriver=managerwebdriver,
+            cfg=cfg,
+        )
 
         self.events_scraper: Optional[EventsComponentScraper] = None
 
@@ -294,12 +307,23 @@ class SeasonFootballScraper(BaseSeasonScraper):
 
         return results
 
-    def scrape(
-        self, use_threading: bool = True, max_workers: int = 5
-    ) -> schemas.SeasonScrapingResult:
+    def scrape(self, use_threading: bool = True, max_workers: int = 5) -> None:
         """Main scraping method"""
         self._get_events()
         if use_threading:
-            return self.process_events_threaded(max_workers)
+            self.data: schemas.SeasonScrapingResult = self.process_events_threaded(
+                max_workers
+            )
         else:
-            return self.process_events_sequential()
+            self.data: schemas.SeasonScrapingResult = self.process_events_sequential()
+
+    def _scrape_debug(self, use_threading: bool = True, max_workers: int = 3) -> None:
+        """Main scraping method"""
+        self._get_events()
+        self._set_debug_limit_valid_matches(limit=3)
+        if use_threading:
+            self.data: schemas.SeasonScrapingResult = self.process_events_threaded(
+                max_workers
+            )
+        else:
+            self.data: schemas.SeasonScrapingResult = self.process_events_sequential()

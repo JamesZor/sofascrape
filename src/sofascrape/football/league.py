@@ -6,8 +6,9 @@ from webdriver import ManagerWebdriver
 
 import sofascrape.schemas.general as schemas
 from sofascrape.abstract.base import BaseLeagueScraper
-from sofascrape.football import SeasonFootballScraper
 from sofascrape.general import SeasonsComponentScraper
+
+from .season import SeasonFootballScraper
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class LeagueFootballScraper(BaseLeagueScraper):
                     results[str(season.year)] = SeasonFootballScraper(
                         tournamentid=self.tournamentid,
                         seasonid=int(season.id),
-                        managerwebdriver=self.managerwebdriver,
+                        managerwebdriver=self.mw,
                         cfg=self.cfg,
                     )
 
@@ -101,10 +102,3 @@ class LeagueFootballScraper(BaseLeagueScraper):
 
     def scrape(self):
         pass
-
-
-if __name__ == "__main__":
-    tournamentid = 1
-    ls = LeagueFootballScraper(tournamentid=tournamentid)
-    ls.get_seasons()
-    ls.test_print()

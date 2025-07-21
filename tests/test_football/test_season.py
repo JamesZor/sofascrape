@@ -32,6 +32,18 @@ def test_get_events():
     print(season_scraper.valid_matchids[0:4])
 
 
+def test_debug_scrape():
+    season_scraper = SeasonFootballScraper(
+        tournamentid=tournament_id, seasonid=season_id
+    )
+    season_scraper._scrape_debug(use_threading=True, max_workers=3)
+
+    print(f"Total matches = {season_scraper.data.total_matches}")
+
+    for match in season_scraper.data.matches:
+        print(match.data.base.model_dump_json(indent=4))
+
+
 def test_process():
 
     season_scraper = SeasonFootballScraper(

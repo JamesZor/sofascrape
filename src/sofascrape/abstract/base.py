@@ -105,6 +105,8 @@ class BaseSeasonScraper(ABC):
         )
         self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
 
+        self.data: Optional[T] = None
+
     def _get_cfg(self) -> DictConfig:
         with initialize(config_path="../conf/", version_base="1.3"):
             cfg = compose(config_name="general")
