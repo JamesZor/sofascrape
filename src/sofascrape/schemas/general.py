@@ -32,6 +32,14 @@ class TournamentSchema(BaseModel):
 class TournamentData(BaseModel):
     tournament: TournamentSchema
 
+    def get_info_string(self) -> str:
+        """Return formatted string with tournament info."""
+        return f"ID: {self.tournament.id}, Name: {self.tournament.name} ({self.tournament.slug}), Sport: {self.tournament.category.sport.name}"
+
+    def __str__(self) -> str:
+        """String representation of the tournament."""
+        return self.get_info_string()
+
 
 ##############################
 # seasons

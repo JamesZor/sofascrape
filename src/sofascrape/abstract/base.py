@@ -118,3 +118,15 @@ class BaseLeagueScraper(BaseScraperModel, ABC):
     def scrape(self):
         """Scrape all seasons (and thus all matches) in a league."""
         pass
+
+
+class BaseTournamentProcessor(BaseScraperModel, ABC):
+    def __init__(
+        self,
+        managerwebdriver: Optional[ManagerWebdriver] = None,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
+        super().__init__(cfg=cfg)
+        self.mw: ManagerWebdriver = (
+            managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
+        )
