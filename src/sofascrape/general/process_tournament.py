@@ -23,7 +23,7 @@ class TournamentProcessScraper(BaseTournamentProcessor):
         self.tournament_ids_list: List[int] = []
 
     def _get_list_of_tournamentids(self) -> None:
-        self.tournament_ids_list = list(range(1, 50, 1))
+        self.tournament_ids_list = list(range(1, 11, 1))
 
     def process(self):
 
