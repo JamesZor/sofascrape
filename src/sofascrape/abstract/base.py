@@ -12,15 +12,25 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 
-class BaseComponentScraper(ABC, Generic[T]):
+class BaseScraperModel:
+    def __init__(self, cfg: Optional[DictConfig]) -> None:
+        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
+
+    def _get_cfg(self) -> DictConfig:
+        with initialize(config_path="../conf/", version_base="1.3"):
+            cfg = compose(config_name="general")
+        return cfg
+
+
+class BaseComponentScraper(BaseScraperModel, ABC, Generic[T]):
     """
     Lower level componet. Gets the data and parse it.
     """
 
     def __init__(self, webdriver: MyWebDriver, cfg: Optional[DictConfig] = None):
+        super().__init__(cfg=cfg)
         self.webdriver: MyWebDriver = webdriver
 
-        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
         self.raw_data: Optional[Dict] = None
         self.data: Optional[T] = None
 
@@ -53,36 +63,14 @@ class BaseComponentScraper(ABC, Generic[T]):
             logger.error(f"Processing failed: {str(e)}")
             raise
 
-    def _get_cfg(self) -> DictConfig:
-        with initialize(config_path="../conf/", version_base="1.3"):
-            cfg = compose(config_name="general")
-        return cfg
 
-    # TODO
-    def _validate_inputs(self, tournamentid: int, webdriver: MyWebDriver) -> None:
-        """Validate constructor inputs."""
-        if not isinstance(webdriver, MyWebDriver):
-            raise ValueError("Correct webdriver needs to be passed.")
-
-        if not isinstance(tournamentid, int) or tournamentid < 0:
-            raise ValueError(
-                f"tournamentid must be a positive integer. "
-                f"Got: {tournamentid=}, {type(tournamentid)=}"
-            )
-
-
-class BaseMatchScraper(ABC):
+class BaseMatchScraper(BaseScraperModel, ABC):
     def __init__(
         self, webdriver: MyWebDriver, matchid: int, cfg: Optional[DictConfig] = None
-    ):
+    ) -> None:
+        super().__init__(cfg=cfg)
         self.webdriver: MyWebDriver = webdriver
         self.matchid: int = matchid
-        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
-
-    def _get_cfg(self) -> DictConfig:
-        with initialize(config_path="../conf/", version_base="1.3"):
-            cfg = compose(config_name="general")
-        return cfg
 
     @abstractmethod
     def scrape(self):
@@ -90,7 +78,7 @@ class BaseMatchScraper(ABC):
         pass
 
 
-class BaseSeasonScraper(ABC):
+class BaseSeasonScraper(BaseScraperModel, ABC):
     def __init__(
         self,
         tournamentid: int,
@@ -98,19 +86,13 @@ class BaseSeasonScraper(ABC):
         managerwebdriver: Optional[ManagerWebdriver] = None,
         cfg: Optional[DictConfig] = None,
     ) -> None:
+        super().__init__(cfg=cfg)
         self.tournamentid: int = tournamentid
         self.seasonid: int = seasonid
         self.mw: ManagerWebdriver = (
             managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
         )
-        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
-
         self.data: Optional[T] = None
-
-    def _get_cfg(self) -> DictConfig:
-        with initialize(config_path="../conf/", version_base="1.3"):
-            cfg = compose(config_name="general")
-        return cfg
 
     @abstractmethod
     def scrape(self):
@@ -118,23 +100,19 @@ class BaseSeasonScraper(ABC):
         pass
 
 
-class BaseLeagueScraper(ABC):
+class BaseLeagueScraper(BaseScraperModel, ABC):
     def __init__(
         self,
         tournamentid: int,
         managerwebdriver: Optional[ManagerWebdriver] = None,
         cfg: Optional[DictConfig] = None,
     ) -> None:
+        super().__init__(cfg=cfg)
         self.tournamentid: int = tournamentid
         self.mw: ManagerWebdriver = (
             managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
         )
         self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
-
-    def _get_cfg(self) -> DictConfig:
-        with initialize(config_path="../conf/", version_base="1.3"):
-            cfg = compose(config_name="general")
-        return cfg
 
     @abstractmethod
     def scrape(self):

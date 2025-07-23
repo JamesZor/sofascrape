@@ -1,4 +1,5 @@
 import json
+import time
 
 import pytest
 from omegaconf import OmegaConf
@@ -49,6 +50,7 @@ def test_same_stats():
     s1 = SeasonFootballScraper(tournamentid=tournament_id, seasonid=season_id)
     s1._scrape_debug(use_threading=True, max_workers=3)
 
+    time.sleep(30)
     s2 = SeasonFootballScraper(tournamentid=tournament_id, seasonid=season_id)
     s2._scrape_debug(use_threading=True, max_workers=3)
 
@@ -63,11 +65,14 @@ def test_same_stats():
         ):
 
             print(
-                f"{s1.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].home},{s1.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].away}."
+                s1.data.matches[i]
+                .data.stats.statistics[0]
+                .groups[0]
+                .statisticsItems[j]
+                .name
             )
-
             print(
-                f"{s2.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].home},{s2.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].away}."
+                f"({s1.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].home},{s2.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].home}),({s1.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].away},{s2.data.matches[i].data.stats.statistics[0].groups[0].statisticsItems[j].away}.)"
             )
 
         print("--- ----" * 20)
