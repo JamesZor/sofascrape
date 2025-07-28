@@ -15,7 +15,7 @@ class NoteBookType(Enum):
 
 
 class NotebookUtils:
-    def __init__(self, type: NoteBookType) -> None:
+    def __init__(self, type: NoteBookType, web_on: bool = True) -> None:
         self.base_path: Path = Path(__file__).parent.parent.parent.parent
         self.dir: Path = self.base_path / "example_json" / type.value
 
@@ -23,7 +23,8 @@ class NotebookUtils:
 
         self.cfg = self.create_global_cfg()
 
-        self.set_up_webdriver()
+        if web_on:
+            self.set_up_webdriver()
 
     def set_up_webdriver(self) -> None:
         try:
