@@ -53,7 +53,10 @@ class ConvertibleBaseModel(BaseModel):
         """Get value from nested object using dot notation."""
         obj = self
         for attr in path.split("."):
-            obj = getattr(obj, attr)
+            if hasattr(obj, attr):
+                obj = getattr(obj, attr)
+            else:
+                return None
         return obj
 
 
@@ -318,6 +321,15 @@ class RefereeSchema(ConvertibleBaseModel):
     sport: SportSchema
     country: CountrySchema
 
+    def get_nested_fields(self) -> List[str]:
+        return ["sport", "country"]
+
+    def get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {
+            "sport_id": "sport.id",
+            "country_id": "country.id",
+        }
+
 
 class FootballTeamSchema(TeamSchema):
     """Extended team schema for football with additional fields"""
@@ -383,12 +395,24 @@ class FootballStatisticItemSchema(ConvertibleBaseModel):
     homeTotal: Optional[int] = None
     awayTotal: Optional[int] = None
 
+    def get_nested_fields(self) -> List[str]:
+        return []  # No nested objects
+
+    def get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {}  # Foreign keys will be set when saving
+
 
 class StatisticGroupSchema(ConvertibleBaseModel):
     """Group of related statistics (e.g., "Match overview", "Shots", etc.)"""
 
     groupName: str
     statisticsItems: List[FootballStatisticItemSchema]
+
+    def get_nested_fields(self) -> List[str]:
+        return ["statisticsItems"]
+
+    def get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {}
 
 
 class FootballStatisticPeriodSchema(ConvertibleBaseModel):
@@ -397,11 +421,23 @@ class FootballStatisticPeriodSchema(ConvertibleBaseModel):
     period: str  # "ALL", "1ST", "2ND"
     groups: List[StatisticGroupSchema]
 
+    def get_nested_fields(self) -> List[str]:
+        return ["groups"]
+
+    def get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {}
+
 
 class FootballStatsSchema(ConvertibleBaseModel):
     """Complete football statistics data"""
 
     statistics: List[FootballStatisticPeriodSchema]
+
+    def get_nested_fields(self) -> List[str]:
+        return ["statistics"]
+
+    def get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {}
 
 
 ##############################
