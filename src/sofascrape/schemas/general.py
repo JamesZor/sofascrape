@@ -5,31 +5,96 @@ from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 from pydantic import BaseModel, Field, model_validator
 
 ##############################
+# Enhanced Base Models with Conversion Methods
+##############################
+
+
+class ConvertibleBaseModel(BaseModel):
+    """Base class that adds conversion capabilities to all Pydantic models."""
+
+    def to_sql_dict(self, exclude_relations: bool = True) -> Dict[str, Any]:
+        """
+        Convert to dictionary suitable for SQLModel creation.
+
+        Args:
+            exclude_relations: If True, exclude nested objects (default behavior)
+        """
+        data = self.model_dump()
+
+        if exclude_relations:
+            # Remove nested objects by default
+            nested_fields = self._get_nested_fields()
+            for field in nested_fields:
+                data.pop(field, None)
+
+        # Add foreign key mappings if defined
+        foreign_keys = self._get_foreign_key_mappings()
+        for fk_name, source_path in foreign_keys.items():
+            try:
+                value = self._get_nested_value(source_path)
+                if value is not None:
+                    data[fk_name] = value
+            except (AttributeError, KeyError):
+                # Skip if nested value doesn't exist
+                pass
+
+        # Remove None values
+        return {k: v for k, v in data.items() if v is not None}
+
+    def _get_nested_fields(self) -> List[str]:
+        """Override in subclasses to define which fields are nested objects."""
+        return []
+
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
+        """Override in subclasses to define foreign key mappings."""
+        return {}
+
+    def _get_nested_value(self, path: str) -> Any:
+        """Get value from nested object using dot notation."""
+        obj = self
+        for attr in path.split("."):
+            obj = getattr(obj, attr)
+        return obj
+
+
+##############################
 # tournament
 ##############################
 
 
-class SportSchema(BaseModel):
+class SportSchema(ConvertibleBaseModel):
     name: str
     slug: str
     id: int
 
 
-class CategorySchema(BaseModel):
+class CategorySchema(ConvertibleBaseModel):
     name: str
     id: int
     slug: str
     sport: SportSchema
 
+    def _get_nested_fields(self) -> List[str]:
+        return ["sport"]
 
-class TournamentSchema(BaseModel):
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {"sport_id": "sport.id"}
+
+
+class TournamentSchema(ConvertibleBaseModel):
     id: int
     name: str
     slug: str
     category: CategorySchema
 
+    def _get_nested_fields(self) -> List[str]:
+        return ["category"]
 
-class TournamentData(BaseModel):
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {"category_id": "category.id"}
+
+
+class TournamentData(ConvertibleBaseModel):
     tournament: TournamentSchema
 
     def get_info_string(self) -> str:
@@ -46,13 +111,13 @@ class TournamentData(BaseModel):
 ##############################
 
 
-class SeasonSchema(BaseModel):
+class SeasonSchema(ConvertibleBaseModel):
     name: str
     id: int
     year: str
 
 
-class SeasonsListSchema(BaseModel):
+class SeasonsListSchema(ConvertibleBaseModel):
     seasons: List[SeasonSchema]
 
 
@@ -61,7 +126,7 @@ class SeasonsListSchema(BaseModel):
 ##############################
 
 
-class TimeFootballSchema(BaseModel):
+class TimeFootballSchema(ConvertibleBaseModel):
     """football"""
 
     injuryTime1: int = 0
@@ -69,7 +134,7 @@ class TimeFootballSchema(BaseModel):
     currentPeriodStartTimestamp: int
 
 
-class ScoreFootballSchema(BaseModel):
+class ScoreFootballSchema(ConvertibleBaseModel):
     current: int
     display: int
     period1: int
@@ -77,20 +142,20 @@ class ScoreFootballSchema(BaseModel):
     normaltime: int
 
 
-class CountrySchema(BaseModel):
+class CountrySchema(ConvertibleBaseModel):
     name: str
     slug: str
     alpha2: str
     alpha3: str
 
 
-class TeamColorsSchema(BaseModel):
+class TeamColorsSchema(ConvertibleBaseModel):
     primary: str
     secondary: str
     text: str
 
 
-class TeamSchema(BaseModel):
+class TeamSchema(ConvertibleBaseModel):
     name: str
     slug: str
     shortName: str
@@ -100,18 +165,29 @@ class TeamSchema(BaseModel):
     country: CountrySchema
     teamColors: TeamColorsSchema
 
+    def _get_nested_fields(self) -> List[str]:
+        return ["sport", "country", "teamColors"]
 
-class RoundInfoSchema(BaseModel):
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {
+            "sport_id": "sport.id",
+            # Note: country needs special handling since it uses name as key
+            # 'country_id': 'country.name',  # Handle this in converter
+            # 'team_colors_id': handled after saving teamColors
+        }
+
+
+class RoundInfoSchema(ConvertibleBaseModel):
     round: int
 
 
-class StatusSchema(BaseModel):
+class StatusSchema(ConvertibleBaseModel):
     code: int
     description: str
     type: str
 
 
-class EventSchema(BaseModel):
+class EventSchema(ConvertibleBaseModel):
     slug: str
     id: int
     startTimestamp: int
@@ -134,6 +210,33 @@ class EventSchema(BaseModel):
     hasXg: bool = False
     hasEventPlayerStatistics: bool = False
     hasEventPlayerHeatMap: bool = False
+
+    def _get_nested_fields(self) -> List[str]:
+        return [
+            "status",
+            "time",
+            "tournament",
+            "season",
+            "roundInfo",
+            "homeScore",
+            "awayScore",
+            "homeTeam",
+            "awayTeam",
+        ]
+
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {
+            "tournament_id": "tournament.id",
+            "season_id": "season.id",
+            # Add these after implementing related object saving:
+            # 'status_id': 'status.code',  # or handle by code lookup
+            # 'round_info_id': handled after saving roundInfo
+            # 'home_team_id': handled after saving homeTeam
+            # 'away_team_id': handled after saving awayTeam
+            # 'home_score_id': handled after saving homeScore
+            # 'away_score_id': handled after saving awayScore
+            # 'time_id': handled after saving time
+        }
 
     @model_validator(mode="before")
     @classmethod
@@ -162,7 +265,7 @@ class EventSchema(BaseModel):
         return data
 
 
-class EventsListSchema(BaseModel):
+class EventsListSchema(ConvertibleBaseModel):
     events: List[EventSchema]
 
 
@@ -171,21 +274,21 @@ class EventsListSchema(BaseModel):
 ##############################
 
 
-class VenueCoordinatesSchema(BaseModel):
+class VenueCoordinatesSchema(ConvertibleBaseModel):
     latitude: float
     longitude: float
 
 
-class CitySchema(BaseModel):
+class CitySchema(ConvertibleBaseModel):
     name: str
 
 
-class StadiumSchema(BaseModel):
+class StadiumSchema(ConvertibleBaseModel):
     name: str
     capacity: int
 
 
-class VenueSchema(BaseModel):
+class VenueSchema(ConvertibleBaseModel):
     name: str
     slug: str
     capacity: int
@@ -196,7 +299,7 @@ class VenueSchema(BaseModel):
     stadium: Optional[StadiumSchema] = None
 
 
-class ManagerSchema(BaseModel):
+class ManagerSchema(ConvertibleBaseModel):
     name: str
     slug: str
     shortName: str
@@ -204,7 +307,7 @@ class ManagerSchema(BaseModel):
     country: CountrySchema
 
 
-class RefereeSchema(BaseModel):
+class RefereeSchema(ConvertibleBaseModel):
     name: str
     slug: str
     id: int
@@ -253,7 +356,7 @@ class FootballEventSchema(EventSchema):
     tournament: FootballTournamentSchema
 
 
-class FootballDetailsSchema(BaseModel):
+class FootballDetailsSchema(ConvertibleBaseModel):
     event: FootballEventSchema
 
 
@@ -262,7 +365,7 @@ class FootballDetailsSchema(BaseModel):
 ##############################
 
 
-class FootballStatisticItemSchema(BaseModel):
+class FootballStatisticItemSchema(ConvertibleBaseModel):
     """Individual statistic item within a group"""
 
     key: str
@@ -281,21 +384,21 @@ class FootballStatisticItemSchema(BaseModel):
     awayTotal: Optional[int] = None
 
 
-class StatisticGroupSchema(BaseModel):
+class StatisticGroupSchema(ConvertibleBaseModel):
     """Group of related statistics (e.g., "Match overview", "Shots", etc.)"""
 
     groupName: str
     statisticsItems: List[FootballStatisticItemSchema]
 
 
-class FootballStatisticPeriodSchema(BaseModel):
+class FootballStatisticPeriodSchema(ConvertibleBaseModel):
     """Statistics for a specific period (ALL, 1ST, 2ND, etc.)"""
 
     period: str  # "ALL", "1ST", "2ND"
     groups: List[StatisticGroupSchema]
 
 
-class FootballStatsSchema(BaseModel):
+class FootballStatsSchema(ConvertibleBaseModel):
     """Complete football statistics data"""
 
     statistics: List[FootballStatisticPeriodSchema]
@@ -306,14 +409,14 @@ class FootballStatsSchema(BaseModel):
 ##############################
 
 
-class MarketValueSchema(BaseModel):
+class MarketValueSchema(ConvertibleBaseModel):
     """Player market value information"""
 
     value: Optional[int] = None
     currency: Optional[str] = None
 
 
-class PlayerStatisticsSchema(BaseModel):
+class PlayerStatisticsSchema(ConvertibleBaseModel):
     """Player match statistics - all fields optional as different players have different stats"""
 
     totalPass: Optional[int] = None
@@ -366,7 +469,7 @@ class PlayerStatisticsSchema(BaseModel):
     goals: Optional[int] = None
 
 
-class LineupPlayerSchema(BaseModel):
+class LineupPlayerSchema(ConvertibleBaseModel):
     """Player information in lineup"""
 
     name: str
@@ -386,7 +489,7 @@ class LineupPlayerSchema(BaseModel):
     proposedMarketValueRaw: Optional[MarketValueSchema] = None
 
 
-class LineupPlayerEntrySchema(BaseModel):
+class LineupPlayerEntrySchema(ConvertibleBaseModel):
     """Complete player entry with team info and stats"""
 
     player: LineupPlayerSchema
@@ -399,7 +502,7 @@ class LineupPlayerEntrySchema(BaseModel):
     statistics: Optional[PlayerStatisticsSchema] = None
 
 
-class PlayerColorSchema(BaseModel):
+class PlayerColorSchema(ConvertibleBaseModel):
     """Team kit colors"""
 
     primary: Optional[str] = None
@@ -408,7 +511,7 @@ class PlayerColorSchema(BaseModel):
     fancyNumber: Optional[str] = None
 
 
-class MissingPlayerSchema(BaseModel):
+class MissingPlayerSchema(ConvertibleBaseModel):
     """Information about missing/unavailable players"""
 
     player: LineupPlayerSchema
@@ -416,7 +519,7 @@ class MissingPlayerSchema(BaseModel):
     reason: Optional[int] = None
 
 
-class TeamLineupSchema(BaseModel):
+class TeamLineupSchema(ConvertibleBaseModel):
     """Complete team lineup information"""
 
     players: List[LineupPlayerEntrySchema]
@@ -427,7 +530,7 @@ class TeamLineupSchema(BaseModel):
     missingPlayers: List[MissingPlayerSchema] = []
 
 
-class FootballLineupSchema(BaseModel):
+class FootballLineupSchema(ConvertibleBaseModel):
     """Complete football lineup data"""
 
     confirmed: bool
@@ -438,14 +541,14 @@ class FootballLineupSchema(BaseModel):
 ########################################
 #### incidents
 ########################################
-class CoordinatesSchema(BaseModel):
+class CoordinatesSchema(ConvertibleBaseModel):
     """X, Y coordinates on the pitch"""
 
     x: float
     y: float
 
 
-class PassingNetworkActionSchema(BaseModel):
+class PassingNetworkActionSchema(ConvertibleBaseModel):
     """Individual action in passing network leading to goal"""
 
     player: LineupPlayerSchema  # Reuse from lineup schemas
@@ -463,7 +566,7 @@ class PassingNetworkActionSchema(BaseModel):
     goalType: Optional[str] = None  # "regular", "penalty", "own-goal"
 
 
-class PeriodIncidentSchema(BaseModel):
+class PeriodIncidentSchema(ConvertibleBaseModel):
     """Period incidents (HT, FT)"""
 
     incidentType: Literal["period"] = "period"  # Use Literal instead of str
@@ -479,7 +582,7 @@ class PeriodIncidentSchema(BaseModel):
     periodTimeSeconds: int
 
 
-class InjuryTimeIncidentSchema(BaseModel):
+class InjuryTimeIncidentSchema(ConvertibleBaseModel):
     """Injury time incidents"""
 
     incidentType: Literal["injuryTime"] = "injuryTime"  # Use Literal instead of str
@@ -489,7 +592,7 @@ class InjuryTimeIncidentSchema(BaseModel):
     reversedPeriodTime: int
 
 
-class SubstitutionIncidentSchema(BaseModel):
+class SubstitutionIncidentSchema(ConvertibleBaseModel):
     """Substitution incidents"""
 
     incidentType: Literal["substitution"] = "substitution"  # Use Literal instead of str
@@ -504,7 +607,7 @@ class SubstitutionIncidentSchema(BaseModel):
     reversedPeriodTime: int
 
 
-class CardIncidentSchema(BaseModel):
+class CardIncidentSchema(ConvertibleBaseModel):
     """Card incidents (yellow, red)"""
 
     incidentType: Literal["card"] = "card"  # Use Literal instead of str
@@ -520,7 +623,7 @@ class CardIncidentSchema(BaseModel):
     reversedPeriodTime: Optional[int] = None
 
 
-class VarDecisionIncidentSchema(BaseModel):
+class VarDecisionIncidentSchema(ConvertibleBaseModel):
     """VAR decision incidents"""
 
     incidentType: Literal["varDecision"] = "varDecision"
@@ -536,7 +639,7 @@ class VarDecisionIncidentSchema(BaseModel):
     reason: Optional[str] = None
 
 
-class GoalIncidentSchema(BaseModel):
+class GoalIncidentSchema(ConvertibleBaseModel):
     """Goal incidents"""
 
     incidentType: Literal["goal"] = "goal"  # Use Literal instead of str
@@ -553,7 +656,7 @@ class GoalIncidentSchema(BaseModel):
     reversedPeriodTime: int
 
 
-class TeamColorsIncidentSchema(BaseModel):
+class TeamColorsIncidentSchema(ConvertibleBaseModel):
     """Team colors in incidents"""
 
     goalkeeperColor: PlayerColorSchema  # Reuse from lineup
@@ -574,7 +677,7 @@ IncidentType = Annotated[
 ]
 
 
-class FootballIncidentsSchema(BaseModel):
+class FootballIncidentsSchema(ConvertibleBaseModel):
     """Complete football incidents data"""
 
     incidents: List[IncidentType]  # Remove discriminator from here
@@ -591,14 +694,14 @@ class FootballIncidentsSchema(BaseModel):
 ##############################
 
 
-class GraphPointSchema(BaseModel):
+class GraphPointSchema(ConvertibleBaseModel):
     """Individual graph point representing match momentum at a specific minute"""
 
     minute: float  # Can be decimal like 45.5, 90.5 for added time
     value: int  # Momentum value (positive favors home, negative favors away)
 
 
-class FootballGraphSchema(BaseModel):
+class FootballGraphSchema(ConvertibleBaseModel):
     """Complete football graph/momentum data"""
 
     graphPoints: List[GraphPointSchema]
@@ -620,7 +723,7 @@ class ComponentStatus(str, Enum):
     NOT_ATTEMPTED = "not_attempted"
 
 
-class ComponentError(BaseModel):
+class ComponentError(ConvertibleBaseModel):
     """Individual component error details"""
 
     component: str
@@ -629,7 +732,7 @@ class ComponentError(BaseModel):
     attempted_at: Optional[str] = None  # timestamp
 
 
-class MatchScrapingErrors(BaseModel):
+class MatchScrapingErrors(ConvertibleBaseModel):
     """Detailed error tracking for all components"""
 
     base: ComponentError
@@ -683,7 +786,7 @@ class MatchScrapingErrors(BaseModel):
         ]
 
 
-class FootballMatchResultDetailed(BaseModel):
+class FootballMatchResultDetailed(ConvertibleBaseModel):
     """Complete football match data with detailed error tracking"""
 
     # Match metadata
@@ -740,7 +843,7 @@ class FootballMatchResultDetailed(BaseModel):
 ##############################
 # football season
 ##############################
-class SeasonEventSchema(BaseModel):
+class SeasonEventSchema(ConvertibleBaseModel):
     """Individual match result in a season"""
 
     tournament_id: int
@@ -752,7 +855,7 @@ class SeasonEventSchema(BaseModel):
     error: Optional[str] = None
 
 
-class SeasonScrapingResult(BaseModel):
+class SeasonScrapingResult(ConvertibleBaseModel):
     """Complete season scraping result"""
 
     tournament_id: int
