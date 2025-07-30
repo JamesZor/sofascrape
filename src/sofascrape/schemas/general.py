@@ -309,6 +309,14 @@ class ManagerSchema(ConvertibleBaseModel):
     id: int
     country: CountrySchema
 
+    def _get_nested_fields(self) -> List[str]:
+        return ["country"]
+
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {
+            "country_slug": "country.slug",
+        }
+
 
 class RefereeSchema(ConvertibleBaseModel):
     name: str
@@ -321,10 +329,10 @@ class RefereeSchema(ConvertibleBaseModel):
     sport: SportSchema
     country: CountrySchema
 
-    def get_nested_fields(self) -> List[str]:
+    def _get_nested_fields(self) -> List[str]:
         return ["sport", "country"]
 
-    def get_foreign_key_mappings(self) -> Dict[str, str]:
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
         return {
             "sport_id": "sport.id",
             "country_id": "country.id",
@@ -338,6 +346,17 @@ class FootballTeamSchema(TeamSchema):
     manager: Optional[ManagerSchema] = None
     venue: Optional[VenueSchema] = None
     class_: Optional[int] = Field(None, alias="class")
+
+    def _get_nested_fields(self) -> List[str]:
+        return ["sport", "country", "teamColors", "manager", "venue"]
+
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
+        return {
+            "sport_id": "sport.id",
+            # Note: country needs special handling since it uses name as key
+            # 'country_id': 'country.name',  # Handle this in converter
+            # 'team_colors_id': handled after saving teamColors
+        }
 
 
 class FootballTournamentSchema(TournamentSchema):
@@ -395,10 +414,10 @@ class FootballStatisticItemSchema(ConvertibleBaseModel):
     homeTotal: Optional[int] = None
     awayTotal: Optional[int] = None
 
-    def get_nested_fields(self) -> List[str]:
+    def _get_nested_fields(self) -> List[str]:
         return []  # No nested objects
 
-    def get_foreign_key_mappings(self) -> Dict[str, str]:
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
         return {}  # Foreign keys will be set when saving
 
 
@@ -408,10 +427,10 @@ class StatisticGroupSchema(ConvertibleBaseModel):
     groupName: str
     statisticsItems: List[FootballStatisticItemSchema]
 
-    def get_nested_fields(self) -> List[str]:
+    def _get_nested_fields(self) -> List[str]:
         return ["statisticsItems"]
 
-    def get_foreign_key_mappings(self) -> Dict[str, str]:
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
         return {}
 
 
@@ -421,10 +440,10 @@ class FootballStatisticPeriodSchema(ConvertibleBaseModel):
     period: str  # "ALL", "1ST", "2ND"
     groups: List[StatisticGroupSchema]
 
-    def get_nested_fields(self) -> List[str]:
+    def _get_nested_fields(self) -> List[str]:
         return ["groups"]
 
-    def get_foreign_key_mappings(self) -> Dict[str, str]:
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
         return {}
 
 
@@ -433,10 +452,10 @@ class FootballStatsSchema(ConvertibleBaseModel):
 
     statistics: List[FootballStatisticPeriodSchema]
 
-    def get_nested_fields(self) -> List[str]:
+    def _get_nested_fields(self) -> List[str]:
         return ["statistics"]
 
-    def get_foreign_key_mappings(self) -> Dict[str, str]:
+    def _get_foreign_key_mappings(self) -> Dict[str, str]:
         return {}
 
 

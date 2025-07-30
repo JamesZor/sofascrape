@@ -1,4 +1,5 @@
 import json
+import pickle
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -49,6 +50,17 @@ class NotebookUtils:
         with open(file_path, "w") as f:
             json.dump(obj=data, fp=f, **kwags)
         print(f"File saved to {file_path}")
+
+    def save_pickle(self, file_name: str, data: Any, **kwags) -> None:
+        file_path: Path = self.dir / f"{file_name}.pkl"
+        with open(file_path, "wb") as f:
+            pickle.dump(data, f)
+
+    def load_pickle(self, file_name: str) -> Any:
+        file_path: Path = self.dir / f"{file_name}.pkl"
+        with open(file_path, "rb") as f:
+            data = pickle.load(f)
+        return data
 
     def __repr__(self):
         return f"{self.base_path =}, {self.dir =}"

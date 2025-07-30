@@ -6,6 +6,7 @@ from omegaconf import OmegaConf
 from webdriver import ManagerWebdriver
 
 from sofascrape.football import FootballMatchScraper
+from sofascrape.utils import NoteBookType, NotebookUtils
 from sofascrape.utils.testing import load_match_ids
 
 # Load match IDs from JSON file
@@ -41,3 +42,11 @@ def test_process_sweep(matchid):
     result = scraper.scrape()
     assert result is not None, "None data"
     d1.close()
+
+
+def test_save_match():
+    nbu = NotebookUtils(type=NoteBookType.FOOTBALL, web_on=True)
+    scraper = FootballMatchScraper(webdriver=nbu.driver, matchid=pl_24_25_ids[20])
+    result = scraper.scrape()
+    if result:
+        nbu.save_pickle("football_match_0", result)
