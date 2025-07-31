@@ -138,11 +138,11 @@ class TimeFootballSchema(ConvertibleBaseModel):
 
 
 class ScoreFootballSchema(ConvertibleBaseModel):
-    current: int
-    display: int
-    period1: int
-    period2: int
-    normaltime: int
+    current: Optional[int] = None
+    display: Optional[int] = None
+    period1: Optional[int] = None
+    period2: Optional[int] = None
+    normaltime: Optional[int] = None
 
 
 class CountrySchema(ConvertibleBaseModel):
@@ -161,7 +161,7 @@ class TeamColorsSchema(ConvertibleBaseModel):
 class TeamSchema(ConvertibleBaseModel):
     name: str
     slug: str
-    shortName: str
+    shortName: Optional[str] = None
     nameCode: str
     gender: str
     sport: SportSchema
@@ -288,13 +288,13 @@ class CitySchema(ConvertibleBaseModel):
 
 class StadiumSchema(ConvertibleBaseModel):
     name: str
-    capacity: int
+    capacity: Optional[int] = None
 
 
 class VenueSchema(ConvertibleBaseModel):
     name: str
     slug: str
-    capacity: int
+    capacity: Optional[int]
     id: int
     city: CitySchema
     venueCoordinates: Optional[VenueCoordinatesSchema] = None
@@ -503,7 +503,7 @@ class PlayerStatisticsSchema(ConvertibleBaseModel):
     expectedGoals: Optional[float] = None
     expectedAssists: Optional[float] = None
     keyPass: Optional[int] = None
-    ratingVersions: Optional[Dict[str, float]] = None
+    ratingVersions: Optional[Dict[str, Optional[float]]] = None
 
     # Goalkeeper specific stats
     goodHighClaim: Optional[int] = None
@@ -626,8 +626,8 @@ class PeriodIncidentSchema(ConvertibleBaseModel):
 
     incidentType: Literal["period"] = "period"  # Use Literal instead of str
     text: str  # "HT", "FT"
-    homeScore: int
-    awayScore: int
+    homeScore: Optional[int]
+    awayScore: Optional[int]
     isLive: bool
     time: int
     addedTime: int
@@ -698,8 +698,8 @@ class GoalIncidentSchema(ConvertibleBaseModel):
     """Goal incidents"""
 
     incidentType: Literal["goal"] = "goal"  # Use Literal instead of str
-    homeScore: int
-    awayScore: int
+    homeScore: Optional[int]
+    awayScore: Optional[int]
     player: LineupPlayerSchema  # Reuse from lineup schemas
     assist1: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
     assist2: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas

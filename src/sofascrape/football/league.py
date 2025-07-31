@@ -53,7 +53,7 @@ class LeagueFootballScraper(BaseLeagueScraper):
         self.season_scraper: Optional[SeasonsComponentScraper] = None
         self.set_years_to_process()
 
-    def set_years_to_process(self, start_year: int = 23, end_year: int = 24) -> None:
+    def set_years_to_process(self, start_year: int = 20, end_year: int = 24) -> None:
         self.years_to_process: Set[str] = FootballSeasonYears.window_season(
             start_year=start_year, end_year=end_year
         )
