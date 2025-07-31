@@ -17,10 +17,14 @@ if __name__ == "__main__":
     pu = ProcessingUtils(type=FootballLeague.SCOTLAND, web_on=False)
 
     league_scraper = LeagueFootballScraper(tournamentid=scotland_pl_tour_id)
-    results_dict = league_scraper._wip_scrape()
+    # example
+    # results_dict = league_scraper._wip_scrape()
+    # pu.save_pickle("scot_pl_example", results_dict)
+    # load_results = pu.load_pickle(file_name="scot_pl_example")
 
-    pu.save_pickle("scot_pl_example", results_dict)
-
+    # season 24 - 20
+    results_dict = league_scraper.scrape()
+    pu.save_pickle("scot_pl_20_24", results_dict)
     load_results = pu.load_pickle(file_name="scot_pl_example")
 
     # for seasonid, season_scrape in load_results.items():

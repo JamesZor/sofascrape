@@ -100,4 +100,21 @@ class LeagueFootballScraper(BaseLeagueScraper):
         return results
 
     def scrape(self):
-        pass
+        self.get_seasons()
+        self.set_years_to_process()
+
+        results = {}
+
+        if self.season_scraper is not None:
+            for season in self.season_scraper.data.seasons:
+                if season.year in self.years_to_process:
+
+                    results[str(season.year)] = SeasonFootballScraper(
+                        tournamentid=self.tournamentid,
+                        seasonid=int(season.id),
+                        managerwebdriver=self.mw,
+                        cfg=self.cfg,
+                    )
+                    results[str(season.year)].scrape()
+
+        return results
