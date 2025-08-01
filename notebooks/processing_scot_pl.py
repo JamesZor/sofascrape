@@ -105,7 +105,7 @@ def reorganize_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    t = process_league_data("scot_pl_example")
+    t = process_league_data("scot_pl_20_24")
     print(t.dataframes["matches"].head(5))
     print("-" * 100)
     print(t.dataframes["match_stats"].sample(frac=0.2))
