@@ -4,6 +4,8 @@ from typing import Dict, List, Optional
 
 import pandas as pd
 
+import sofascrape.schemas.general as sofaschema
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +39,7 @@ class FootballDataTransformer:
 
             for match in season_scraper.data.matches:
                 if match.success and match.data and match.data.base:
-                    event = match.data.base.event
+                    event: sofaschema.FootballEventSchema = match.data.base.event
 
                     match_dict = {
                         # Identifiers
@@ -45,6 +47,7 @@ class FootballDataTransformer:
                         "season_id": match.season_id,
                         "match_id": match.match_id,
                         "tournament_id": match.tournament_id,
+                        "tournament_slug": event.tournament.slug,
                         # Teams
                         "home_team": event.homeTeam.name,
                         "home_team_slug": event.homeTeam.slug,
@@ -85,6 +88,80 @@ class FootballDataTransformer:
 
         return pd.DataFrame(matches_data)
 
+    def _pivot_match_stats_clean(
+        self,
+        stats_df: pd.DataFrame,
+        simplify_names: bool = True,
+        periods_to_include: list = ["ALL", "1ST", "2ND"],
+    ) -> pd.DataFrame:
+        """
+        Pivot match statistics with options for cleaner output.
+
+        Args:
+            stats_df: DataFrame with match statistics in long format
+            simplify_names: If True, use only stat_key for column names
+            periods_to_include: List of periods to include (e.g., ['ALL', '1ST', '2ND'])
+
+        Returns:
+            DataFrame with stats in wide format
+        """
+        df = stats_df.copy()
+
+        # Filter periods if specified
+        if periods_to_include:
+            df = df[df["period"].isin(periods_to_include)]
+
+        # Create stat identifier
+        if simplify_names:
+            df["stat_identifier"] = df["stat_key"]
+        else:
+            # Clean up names for better column headers
+            df["stat_identifier"] = (
+                df["group_name"].str.replace(" ", "_").str.lower()
+                + "_"
+                + df["stat_key"]
+            )
+        # Single pivot with both home and away values
+        pivoted = df.pivot_table(
+            index=["match_id", "season_year", "period"],
+            columns="stat_identifier",
+            values=["home_value", "away_value"],
+            aggfunc="first",
+        )
+
+        # Flatten multi-level columns
+        pivoted.columns = ["_".join(col).strip() for col in pivoted.columns.values]
+
+        # Reset index
+        result = pivoted.reset_index()
+
+        # Optional: Reorganize columns to pair home/away stats
+        if simplify_names:
+            result = self._reorganize_columns(result)
+
+        return result
+
+    def _reorganize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Reorganize columns to group home/away pairs together.
+        """
+        id_cols = ["match_id", "season_year", "period"]
+        stat_cols = [col for col in df.columns if col not in id_cols]
+
+        # Extract unique stat names
+        home_stats = [col for col in stat_cols if col.startswith("home_value_")]
+        away_stats = [col for col in stat_cols if col.startswith("away_value_")]
+
+        # Pair them up
+        paired_cols = []
+        for home_col in sorted(home_stats):
+            stat_name = home_col.replace("home_value_", "")
+            away_col = f"away_value_{stat_name}"
+            if away_col in away_stats:
+                paired_cols.extend([home_col, away_col])
+
+        return df[id_cols + paired_cols]
+
     def _create_match_stats_df(self) -> pd.DataFrame:
         """Create DataFrame with aggregated match statistics"""
         stats_data = []
@@ -114,7 +191,7 @@ class FootballDataTransformer:
                                 }
                                 stats_data.append(stat_dict)
 
-        return pd.DataFrame(stats_data)
+        return self._pivot_match_stats_clean(pd.DataFrame(stats_data))
 
     def _create_player_stats_df(self) -> pd.DataFrame:
         """Create DataFrame with player-level statistics"""
