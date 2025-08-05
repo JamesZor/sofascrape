@@ -1,0 +1,53 @@
+# Quality assessment configuration
+quality:
+  # Which components to process (can disable some for testing)
+  active_components:
+    - "base"
+#    - "stats" 
+#    - "lineup"
+#    - "incidents"
+#    - "graph"
+
+  # Component validation rules
+  component_rules:
+    base:
+      required: true
+    stats:
+      required: false
+    lineup:
+      required: false
+    incidents:
+      required: false
+    graph:
+      required: false
+
+  # Consensus requirements
+  consensus:
+    threshold: 1.0  # 100% agreement required
+    min_runs_required: 2
+
+  # Retry configuration
+  retry:
+    max_attempts: 2
+    delay_seconds: 30.0
+    
+  # Hash normalization (fields to ignore when hashing)
+  hash_exclusions:
+    common: []
+    base: ["scraped_at","currentPeriodStartTimestamp"]
+    stats: ["generated_at"]
+    lineup: []
+    incidents: []
+    graph: []
+
+# Storage paths
+storage:
+  base_dir: "data"
+  runs_subdir: "runs"
+  analysis_subdir: "analysis" 
+  golden_subdir: "golden"
+  logs_subdir: "logs"
+
+  file_formats:
+    tournament: "tournament_{tournament_id}"
+    season: "season_{season_id}"
