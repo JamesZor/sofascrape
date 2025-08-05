@@ -114,22 +114,12 @@ for season in seasons_ids_scraper.data.seasons:
    "id": 1570,
    "year": "08/09"
 }
+"""
 
 #####
 """
+#Scrape and save example:
 
-import logging
-
-from sofascrape.football import SeasonFootballScraper
-from sofascrape.general import SeasonsComponentScraper
-from sofascrape.utils import FootballLeague, ProcessingUtils
-
-scot_details: FootballLeague = FootballLeague.SCOTLAND
-pu = ProcessingUtils(type=FootballLeague.SCOTLAND, web_on=True)
-d1 = pu.webmanager.spawn_webdriver()
-
-
-if __name__ == "__main__":
     season_scraper = SeasonFootballScraper(
         tournamentid=scot_details.value["id"],
         seasonid=62408,
@@ -138,4 +128,81 @@ if __name__ == "__main__":
     season_scraper.scrape(use_threading=True, max_workers=8)
     pu.save_pickle(
         "scot_s24_r1", data=season_scraper.data
-    )  # schema.SeasonScrapingResults.
+"""
+
+######
+
+import logging
+from datetime import datetime
+from pathlib import Path
+
+from sofascrape.football import SeasonFootballScraper
+from sofascrape.general import SeasonsComponentScraper
+from sofascrape.utils import FootballLeague, ProcessingUtils
+
+
+# ===== LOGGING SETUP =====
+def setup_run_logging(run_name: str = "scot_r2"):
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = log_dir / f"{run_name}_{timestamp}.log"
+
+    # Key change: Don't use basicConfig!
+    # Instead, configure specific loggers:
+
+    # Only your sofascrape package gets debug level
+    sofascrape_logger = logging.getLogger("sofascrape")
+    sofascrape_logger.setLevel(logging.DEBUG)
+
+    # Add handlers only to your loggers
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
+
+    sofascrape_logger.addHandler(handler)
+    sofascrape_logger.propagate = False  # This stops selenium logs!
+
+    # Silence selenium explicitly
+    logging.getLogger("selenium").setLevel(logging.ERROR)
+
+    return str(log_file)
+
+
+# ===== YOUR EXISTING CODE WITH LOGGING =====
+# Setup logging (call this once at the start)
+log_file = setup_run_logging("scot_r3_run1")  # Change run name for different runs
+
+scot_details: FootballLeague = FootballLeague.SCOTLAND
+pu = ProcessingUtils(type=FootballLeague.SCOTLAND, web_on=True)
+d1 = pu.webmanager.spawn_webdriver()
+logger = logging.getLogger("scot_r3")
+
+if __name__ == "__main__":
+    logger.info("Starting season scraper...")
+    logger.info(f"Tournament ID: {scot_details.value['id']}")
+
+    season_scraper = SeasonFootballScraper(
+        tournamentid=scot_details.value["id"],
+        seasonid=62408,
+        managerwebdriver=pu.webmanager,
+    )
+
+    logger.info("Starting scrape with 8 workers...")
+    season_scraper.scrape(use_threading=True, max_workers=8)
+
+    # Log results
+    if season_scraper.data:
+        logger.info(
+            f"Scraping completed! Success rate: {season_scraper.data.success_rate}"
+        )
+        logger.info(
+            f"Total: {season_scraper.data.total_matches}, "
+            f"Success: {season_scraper.data.successful_matches}, "
+            f"Failed: {season_scraper.data.failed_matches}"
+        )
+
+    pu.save_pickle("scot_s24_r3", data=season_scraper.data)
+    logger.info(f"Data saved! Log file: {log_file}")
