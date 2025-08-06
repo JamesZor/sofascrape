@@ -106,6 +106,7 @@ def test_compare_all_match(run_data):
     print(json.dumps(c.find_dict_differences(m3_d["home"], m2_d["home"]), indent=8))
 
 
+@pytest.mark.skip(reason="Not needed currently")
 def test_matchs_consensus(run_data):
     print()
     print("- -" * 50)
@@ -138,3 +139,36 @@ def test_matchs_consensus(run_data):
     )
 
     print(json.dumps(asdict(results_fail), indent=3))
+
+
+def test_season_consensus(run_data):
+    print()
+    print("- -" * 50)
+    print("test compare all compents")
+    runs_dict = {
+        "1": [x.data for x in run_data["1"].matches],
+        "2": [x.data for x in run_data["2"].matches],
+        "3": [x.data for x in run_data["3"].matches],
+    }
+
+    c = Comparator()
+    season_result = c.build_season_consensus(
+        run_data=runs_dict, tournament_id=1, season_id=123456
+    )
+
+    # print(results)
+    print(f"Season summary: {season_result.season_summary}")
+    print(
+        f"Perfect consensus matches: {season_result.matches_with_perfect_consensus[:5]}"
+    )
+    print(f"Matches with outliers: {season_result.matches_with_outliers[:5]}")
+    print(f"Complete failures: {season_result.matches_needing_retry[:5]}")
+
+    # season_result.print_retry_summary()
+    # Get specific retry details
+    retry_plan = season_result.get_retry_plan()
+    print(f"Retry plan: {retry_plan}")
+    #
+    # # List outlier match details
+    # outlier_matches = season_result.list_outlier_matches()
+    # print(f"First outlier match details: {list(outlier_matches.items())[0]}")

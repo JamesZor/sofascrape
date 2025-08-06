@@ -108,6 +108,188 @@ class MatchConsensusResult:
         return outliers
 
 
+@dataclass
+class SeasonConsensusResult:
+    """Complete consensus analysis for an entire season"""
+
+    tournament_id: int
+    season_id: int
+    run_ids: List[str]
+    match_results: Dict[int, MatchConsensusResult] = field(default_factory=dict)
+    matches_in_single_run_only: List[int] = field(
+        default_factory=list
+    )  # Edge case matches
+
+    @property
+    def total_matches(self) -> int:
+        """Total number of matches analyzed"""
+        return len(self.match_results) + len(self.matches_in_single_run_only)
+
+    @property
+    def matches_with_consensus(self) -> List[int]:
+        """Match IDs that have full consensus (all components have at least one agreeing pair)"""
+        return [
+            match_id
+            for match_id, result in self.match_results.items()
+            if result.has_consensus
+        ]
+
+    @property
+    def matches_with_perfect_consensus(self) -> List[int]:
+        """Match IDs where ALL runs agree on ALL components (no outliers)"""
+        return [
+            match_id
+            for match_id, result in self.match_results.items()
+            if result.has_consensus and not result.all_outlier_runs
+        ]
+
+    @property
+    def matches_with_outliers(self) -> List[int]:
+        """Match IDs that have consensus but some runs need retry"""
+        return [
+            match_id
+            for match_id, result in self.match_results.items()
+            if result.has_consensus and result.all_outlier_runs
+        ]
+
+    @property
+    def matches_needing_retry(self) -> List[int]:
+        """Match IDs that have NO consensus at all (complete failures)"""
+        return [
+            match_id
+            for match_id, result in self.match_results.items()
+            if not result.has_consensus
+        ]
+
+    @property
+    def season_summary(self) -> Dict[str, Any]:
+        """Overall season consensus statistics"""
+        total_analyzable = len(self.match_results)
+        perfect_consensus_count = len(self.matches_with_perfect_consensus)
+        consensus_count = len(self.matches_with_consensus)
+        outlier_count = len(self.matches_with_outliers)
+        failed_count = len(self.matches_needing_retry)
+
+        return {
+            "total_matches": self.total_matches,
+            "analyzable_matches": total_analyzable,
+            "single_run_matches": len(self.matches_in_single_run_only),
+            "perfect_consensus": perfect_consensus_count,
+            "consensus_with_outliers": outlier_count,
+            "consensus_total": consensus_count,
+            "failed_matches": failed_count,
+            "consensus_rate": (
+                consensus_count / total_analyzable if total_analyzable > 0 else 0.0
+            ),
+            "perfect_rate": (
+                perfect_consensus_count / total_analyzable
+                if total_analyzable > 0
+                else 0.0
+            ),
+        }
+
+    @property
+    def all_outlier_runs(self) -> Set[str]:
+        """All run IDs that need retry for any match/component"""
+        all_outliers = set()
+        for result in self.match_results.values():
+            all_outliers.update(result.all_outlier_runs)
+        return all_outliers
+
+    def get_retry_plan(self) -> Dict[str, Dict[int, List[str]]]:
+        """Get detailed retry plan organized by run_id"""
+        retry_plan = {run_id: {} for run_id in self.run_ids}
+
+        for match_id, result in self.match_results.items():
+            for comp_name, outlier_runs in result.outlier_runs_by_component.items():
+                for run_id in outlier_runs:
+                    if match_id not in retry_plan[run_id]:
+                        retry_plan[run_id][match_id] = []
+                    retry_plan[run_id][match_id].append(comp_name)
+
+        # Remove empty runs
+        return {run_id: matches for run_id, matches in retry_plan.items() if matches}
+
+    def list_outlier_matches(self) -> Dict[int, Dict[str, Any]]:
+        """List all matches with outliers and their details"""
+        outlier_details = {}
+
+        for match_id in self.matches_with_outliers:
+            result = self.match_results[match_id]
+            outlier_details[match_id] = {
+                "outlier_runs": list(result.all_outlier_runs),
+                "components_with_outliers": result.outlier_runs_by_component,
+                "consensus_summary": result.consensus_summary,
+            }
+
+        return outlier_details
+
+    def list_failed_matches(self) -> Dict[int, Dict[str, Any]]:
+        """List all matches that completely failed consensus"""
+        failed_details = {}
+
+        for match_id in self.matches_needing_retry:
+            result = self.match_results[match_id]
+            failed_details[match_id] = {
+                "runs": result.run_ids,
+                "failed_components": result.retry_components,
+                "consensus_summary": result.consensus_summary,
+            }
+
+        return failed_details
+
+    def print_retry_summary(self):
+        """Print a nice summary of what needs to be retried"""
+        print(f"\n=== SEASON RETRY SUMMARY ===")
+        print(f"Total matches: {self.total_matches}")
+        print(
+            f"Perfect consensus: {len(self.matches_with_perfect_consensus)} ({len(self.matches_with_perfect_consensus)/len(self.match_results)*100:.1f}%)"
+        )
+        print(
+            f"Consensus with outliers: {len(self.matches_with_outliers)} ({len(self.matches_with_outliers)/len(self.match_results)*100:.1f}%)"
+        )
+        print(
+            f"Complete failures: {len(self.matches_needing_retry)} ({len(self.matches_needing_retry)/len(self.match_results)*100:.1f}%)"
+        )
+
+        if self.matches_with_outliers:
+            print(
+                f"\n--- MATCHES WITH OUTLIERS ({len(self.matches_with_outliers)}) ---"
+            )
+            outlier_details = self.list_outlier_matches()
+            for match_id, details in list(outlier_details.items())[:5]:  # Show first 5
+                print(f"Match {match_id}: outlier runs {details['outlier_runs']}")
+                for comp, runs in details["components_with_outliers"].items():
+                    print(f"  {comp}: {list(runs)}")
+            if len(outlier_details) > 5:
+                print(f"  ... and {len(outlier_details)-5} more")
+
+        if self.matches_needing_retry:
+            print(f"\n--- COMPLETE FAILURES ({len(self.matches_needing_retry)}) ---")
+            failed_details = self.list_failed_matches()
+            for match_id, details in list(failed_details.items())[:5]:  # Show first 5
+                print(
+                    f"Match {match_id}: failed components {details['failed_components']}"
+                )
+            if len(failed_details) > 5:
+                print(f"  ... and {len(failed_details)-5} more")
+
+        retry_plan = self.get_retry_plan()
+        if retry_plan:
+            print(f"\n--- RETRY PLAN BY RUN ---")
+            for run_id, matches in retry_plan.items():
+                total_components = sum(
+                    len(components) for components in matches.values()
+                )
+                print(
+                    f"{run_id}: {len(matches)} matches, {total_components} components"
+                )
+
+        print(f"\nTotal runs needing retry: {len(self.all_outlier_runs)}")
+        print(f"All outlier runs: {list(self.all_outlier_runs)}")
+        print("=" * 40)
+
+
 # ============================================================================
 # DATACLASSES FOR RESULTS
 # ============================================================================
@@ -132,7 +314,7 @@ class Comparator:
 
     def _get_config(self) -> DictConfig:
         config_path = (Path(__file__).parent.parent) / "config" / "quality_config.yaml"
-        return OmegaConf.load(config_path)
+        return OmegaConf.load(config_path)  # type: ignore
 
     # ========================================================================
     # CORE COMPARISON METHODS
@@ -194,7 +376,7 @@ class Comparator:
     def _generate_run_pairs(self, run_ids: List[str]) -> List[Tuple[str, str]]:
         """build all pairs, rotations doesn't matter"""
         PAIRS = 2
-        return list(combinations(run_ids, PAIRS))
+        return list(combinations(run_ids, PAIRS))  # type: ignore
 
     def compare_all_pairs(
         self, matches_from_runs: Dict[str, Any]
@@ -225,11 +407,11 @@ class Comparator:
             match1 = matches_from_runs[run1_id]
             match2 = matches_from_runs[run2_id]
 
-            logger.debug(f"Comparing runs {run1_id} vs {run2_id} for match")
+            # logger.debug(f"Comparing runs {run1_id} vs {run2_id} for match")
             comparison_result = self.compare_all_components(match1, match2)
             pair_results[pair] = comparison_result
 
-            logger.debug(f"Result: {comparison_result}")
+            # logger.debug(f"Result: {comparison_result}")
 
         return pair_results
 
@@ -275,10 +457,10 @@ class Comparator:
                 disagreed_pairs=disagreed_pairs,
             )
 
-            logger.debug(
-                f"Component {component}: consensus={has_consensus}, "
-                f"agreed={len(agreed_pairs)}, disagreed={len(disagreed_pairs)}"
-            )
+            # logger.debug(
+            #     f"Component {component}: consensus={has_consensus}, "
+            #     f"agreed={len(agreed_pairs)}, disagreed={len(disagreed_pairs)}"
+            # )
 
         return component_consensus
 
@@ -297,9 +479,9 @@ class Comparator:
         Returns:
             MatchConsensusResult with complete consensus analysis
         """
-        logger.info(
-            f"Building consensus for match {match_id} across {len(matches_from_runs)} runs"
-        )
+        # logger.info(
+        #     f"Building consensus for match {match_id} across {len(matches_from_runs)} runs"
+        # )
 
         if len(matches_from_runs) < 2:
             logger.warning(
@@ -343,12 +525,101 @@ class Comparator:
             component_results=component_consensus,
         )
 
-        logger.info(
-            f"Match {match_id} consensus: {has_overall_consensus}, "
-            f"components needing retry: {retry_components}"
-        )
+        # logger.info(
+        #     f"Match {match_id} consensus: {has_overall_consensus}, "
+        #     f"components needing retry: {retry_components}"
+        # )
 
         return result
+
+    def _collect_all_match_ids(self, run_data: Dict[str, List[Any]]) -> Set[int]:
+        """Collect all unique match IDs across all runs"""
+        all_match_ids = set()
+        for run_id, matches in run_data.items():
+            for match in matches:
+                if hasattr(match, "match_id"):
+                    all_match_ids.add(match.match_id)
+        return all_match_ids
+
+    def _collect_matches_for_id(
+        self, match_id: int, run_data: Dict[str, List[Any]]
+    ) -> Dict[str, Any]:
+        """Collect all match data for a specific match_id across runs"""
+        matches_for_id = {}
+
+        for run_id, matches in run_data.items():
+            for match in matches:
+                if hasattr(match, "match_id") and match.match_id == match_id:
+                    matches_for_id[run_id] = match
+                    break  # Found the match in this run
+
+        return matches_for_id
+
+    def build_season_consensus(
+        self,
+        run_data: Dict[str, List[Any]],
+        tournament_id: int,
+        season_id: int,
+    ) -> SeasonConsensusResult:
+        """
+        Build consensus for entire season across all runs.
+
+        Args:
+            run_data: Dict mapping run_id -> List[FootballMatchResultDetailed]
+            tournament_id: Tournament ID for metadata
+            season_id: Season ID for metadata
+
+        Returns:
+            SeasonConsensusResult with complete season analysis
+        """
+        logger.info(f"Building season consensus across {len(run_data)} runs")
+
+        # Step 1: Get all unique match_ids across all runs
+        all_match_ids = self._collect_all_match_ids(run_data)
+        # logger.info(f"Found {len(all_match_ids)} unique matches across all runs")
+
+        # Step 2: Process each match
+        match_results = {}
+        single_run_matches = []
+
+        for match_id in all_match_ids:
+            # Collect match data from all runs that have this match
+            matches_for_id = self._collect_matches_for_id(match_id, run_data)
+
+            if len(matches_for_id) < 2:
+                # Edge case: match only appears in 1 run, can't build consensus
+                single_run_matches.append(match_id)
+                logger.debug(
+                    f"Match {match_id} only appears in 1 run: {list(matches_for_id.keys())}"
+                )
+                continue
+
+            # Build consensus for this match
+            # logger.debug(
+            #     f"Building consensus for match {match_id} across runs: {list(matches_for_id.keys())}"
+            # )
+            match_consensus = self.build_match_consensus(match_id, matches_for_id)
+            match_results[match_id] = match_consensus
+
+        # Step 3: Create season result
+        season_result = SeasonConsensusResult(
+            tournament_id=tournament_id or 0,
+            season_id=season_id or 0,
+            run_ids=list(run_data.keys()),
+            match_results=match_results,
+            matches_in_single_run_only=single_run_matches,
+        )
+
+        # Log summary
+        summary = season_result.season_summary
+        logger.info(f"Season consensus complete:")
+        logger.info(f"  Total matches: {summary['total_matches']}")
+        logger.info(f"  Analyzable matches: {summary['analyzable_matches']}")
+        logger.info(f"  Single run matches: {summary['single_run_matches']}")
+        # logger.info(f"  Matches with consensus: {summary['matches_with_consensus']}")
+        logger.info(f"  Consensus rate: {summary['consensus_rate']:.1%}")
+
+        return season_result
 
     # ========================================================================
     # Utils/ Debug METHODS
