@@ -104,8 +104,8 @@ data/
 ├── tournament_54/
 │   ├── season_62408/
 │   │   ├── runs/
-│   │   │   ├── run_week1_20250805.pkl
-│   │   │   ├── run_week2_20250812.pkl
+│   │   │   ├── 1_20250805.pkl
+│   │   │   ├── 2_20250812.pkl
 │   │   │   └── retry_stats_20250815.pkl
 │   │   ├── analysis/
 │   │   │   ├── consensus_20250815.pkl
