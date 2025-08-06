@@ -4,11 +4,11 @@
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Run Manager   │───▶│  Data Comparator │───▶│ Quality Assessor│
 └─────────────────┘    └──────────────────┘    └─────────────────┘
-         │                        │                       │
-         ▼                        ▼                       ▼
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Data Store    │    │   Hash Generator │    │  Retry Manager  │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+         │                                               │
+         ▼                                               ▼
+┌─────────────────┐                           ┌─────────────────┐
+│   Data Store    │                           │  Retry Manager  │
+└─────────────────┘                           └─────────────────┘
          │                                               │
          ▼                                               ▼
 ┌─────────────────┐                            ┌─────────────────┐
@@ -24,9 +24,9 @@ src/sofascrape/quality/
 ├── core/
 │   ├── __init__.py
 │   ├── data_models.py      # All dataclasses and enums
-│   ├── hash_generator.py   # Component hashing logic
+│   ├── comparator.py   # comparison of runs.
 │   ├── quality_assessor.py # Binary component validation
-│   ├── consensus_builder.py # Cross-run consensus logic
+│   ├── ? consensus_builder.py # Cross-run consensus logic
 │   ├── retry_manager.py    # Selective component retries
 │   └── golden_builder.py   # Final dataset creation
 ├── storage/
@@ -125,13 +125,12 @@ data/
 
 ### Phase 2: Core Components
 
-    hash_generator.py - Start with just base component
-    quality_assessor.py - Start with just base component
     manager.py - Basic structure, just scraping and storage
+    comparator.py - Start with simple hash comparison
 
 ### Phase 3: Analysis
 
-    consensus_builder.py - Start with simple hash comparison
+    quality_assessor.py - Start with just base component
     review_reports.py - Basic text output of discrepancies
 
 ### Phase 4: Advanced Features

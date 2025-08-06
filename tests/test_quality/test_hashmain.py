@@ -24,6 +24,13 @@ def run1_data() -> sofaschema.SeasonScrapingResult:
     return storage_handler.load_run(run_number=1)
 
 
+@pytest.fixture
+def run2_data() -> sofaschema.SeasonScrapingResult:
+    storage_handler = StorageHandler(tournament_id=1, season_id=123456)
+    return storage_handler.load_run(run_number=3)
+
+
+@pytest.mark.skip(reason="Not needed currently")
 def test_basic_setup(run1_data):
     print()
     print("- -" * 50)
@@ -36,3 +43,19 @@ def test_basic_setup(run1_data):
     hasher.process_all("data")
 
     print(run1_data.season_id)
+
+
+def test_process_base(run1_data, run2_data):
+    print()
+    print("- -" * 50)
+    print("basic setup")
+    hasher = HasherMain()
+    match_1_data = sorted(run1_data.matches, key=lambda x: x.match_id)[0].data
+    match_2_data = sorted(run2_data.matches, key=lambda x: x.match_id)[0].data
+
+    print("match equal", match_1_data == match_2_data)
+    print("base equal", match_1_data.base == match_2_data.base)
+    print("stats equal", match_1_data.stats == match_2_data.stats)
+    print("lineup equal", match_1_data.stats == match_2_data.stats)
+    print("incidents equal", match_1_data.incidents == match_2_data.incidents)
+    print("graph equal", match_1_data.graph == match_2_data.graph)

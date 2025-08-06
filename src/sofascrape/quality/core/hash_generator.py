@@ -1,12 +1,53 @@
 import logging
+from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from omegaconf import DictConfig, OmegaConf
 
 import sofascrape.schemas.general as sofaschema
 
 logger = logging.getLogger(__name__)
+
+
+def process_component_pipeline(
+    match_data: sofaschema.FootballMatchResultDetailed,
+    extract_fn: Callable,
+    transform_fn: Callable,
+    filter_fn: Callable,
+    hasher_fn: Callable[[dict], str],
+) -> str:
+    """Generic pipeline that any component can use"""
+    raw_data = extract_fn(match_data)
+    return raw_data
+    # dict_data = transform_fn(raw_data)
+    # filtered_data = filter_fn(dict_data)
+    # return hasher_fn(filtered_data)
+
+
+def hash_data(filtered_data: dict[str, Union[int, float, str]]) -> str:
+    """hash the filtered data"""
+    # TODO
+    hash: str = "Hasher_fn output"
+    return hash
+
+
+def extract_base_data(
+    match_data: sofaschema.FootballMatchResultDetailed,
+) -> sofaschema.FootballDetailsSchema:
+    if (base_data := match_data.base) is not None:
+        return base_data
+    raise ValueError(f"Failed to get base details for match id {match_data.match_id}.")
+
+
+# Create specialized functions using partial application
+process_base_pipeline = partial(
+    process_component_pipeline,
+    extract_fn=extract_base_data,
+    # transform_fn=transform_base_to_dict,
+    # filter_fn=filter_base_fields,
+    # hasher_fn=hash_data,
+)
 
 
 def component_required(component_name):
@@ -48,13 +89,25 @@ class HasherMain:
     @component_required("base")
     def process_base(self, data):
         logger.debug("base process set")
+
         # processing logic
-        pass
+        # 1 extract the base data from match data
+        # 2 transform base data to dict / or similar
+        # 3 remove fields not applicable
+        # 4 hash and return
+        return process_base_pipeline(
+            match_data=data, transform_fn=None, filter_fn=None, hasher_fn=None
+        )
 
     @component_required("stats")
     def process_stats(self, data):
         # processing logic
         logger.debug("stats process set")
+        # processing logic
+        # 1 extract the base data from match data
+        # 2 transform base data to dict / or similar
+        # 3 remove fields not applicable
+        # 4 hash and return
         pass
 
     def process_all(self, data):

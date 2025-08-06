@@ -521,3 +521,385 @@ class SeasonQualityManager:
         """Get summary of current state of this season's data"""
         # TODO: Return overview of runs, consensus, golden dataset status
         pass
+
+
+
+# Notes, updated 
+removed the hash_generator since pydantic classes have an __eq__ method. 
+
+"""
+Comparator Class - Handles match component comparison using Pydantic equality
+Replaces the hash-based approach with direct model comparison
+"""
+
+import logging
+from pathlib import Path
+from typing import Dict, List, Optional, Set, Any, Tuple
+from omegaconf import DictConfig, OmegaConf
+from collections import defaultdict, Counter
+
+import sofascrape.schemas.general as sofaschema
+
+logger = logging.getLogger(__name__)
+
+class Comparator:
+    """
+    Class to handle the comparison of matches across multiple runs.
+    Uses Pydantic model equality with configurable field exclusions.
+    """
+    
+    def __init__(self, config: Optional[DictConfig] = None) -> None:
+        logger.debug("Comparator init starting...")
+        if config is None:
+            logger.debug("No config given, getting default.")
+            self.config = self._get_config()
+        else:
+            self.config = config
+            
+        # Configuration setup
+        self.active_components = set(self.config.quality.active_components)
+        self.field_exclusions = self.config.quality.comparison_exclusions
+        self.consensus_threshold = self.config.quality.consensus.threshold
+        
+        logger.debug(f"Comparator init finished. Active components: {self.active_components}")
+
+    def _get_config(self) -> DictConfig:
+        config_path = (Path(__file__).parent.parent) / "config" / "quality_config.yaml"
+        return OmegaConf.load(config_path)
+
+    # ========================================================================
+    # CORE COMPARISON METHODS
+    # ========================================================================
+    
+    def compare_single_component(self, component_name: str, 
+                                comp1: Any, comp2: Any) -> bool:
+        """
+        Compare two components of the same type, excluding configured fields.
+        
+        Args:
+            component_name: Name of component (base, stats, lineup, etc.)
+            comp1, comp2: Component data to compare
+            
+        Returns:
+            True if components are equal (ignoring excluded fields)
+        """
+        # TODO: 
+        # 1. Handle None cases (both None = True, one None = False)
+        # 2. Get exclusion fields for this component type
+        # 3. Use model_dump(exclude=...) on both components
+        # 4. Compare the resulting dictionaries
+        # 5. Return boolean result
+        pass
+    
+    def compare_match_all_components(self, match1: sofaschema.FootballMatchResultDetailed, 
+                                   match2: sofaschema.FootballMatchResultDetailed) -> Dict[str, bool]:
+        """
+        Compare all active components between two matches.
+        
+        Args:
+            match1, match2: Match data from different runs
+            
+        Returns:
+            Dict mapping component_name -> comparison_result (True/False)
+        """
+        # TODO:
+        # 1. Initialize results dict
+        # 2. For each active component:
+        #    a. Extract component from both matches
+        #    b. Use compare_single_component()
+        #    c. Store result in dict
+        # 3. Return results dict
+        # 
+        # Example return: {"base": True, "stats": False, "lineup": True}
+        pass
+
+    # ========================================================================
+    # CONSENSUS BUILDING METHODS
+    # ========================================================================
+    
+    def build_match_consensus(self, match_id: int, 
+                             matches_from_runs: List[sofaschema.FootballMatchResultDetailed]) -> Dict[str, Any]:
+        """
+        Build consensus for a single match across multiple runs.
+        
+        Args:
+            match_id: ID of the match being analyzed
+            matches_from_runs: List of match data from different runs
+            
+        Returns:
+            Dict with consensus info for each component
+        """
+        # TODO:
+        # 1. Initialize consensus results dict
+        # 2. For each active component:
+        #    a. Extract component data from all runs
+        #    b. Group identical components together
+        #    c. Check if any group meets consensus threshold (100%)
+        #    d. Store consensus info (has_consensus, winning_data, etc.)
+        # 3. Return consensus results
+        #
+        # Example return:
+        # {
+        #     "base": {"has_consensus": True, "consensus_data": base_data, "agreeing_runs": 3},
+        #     "stats": {"has_consensus": False, "groups": [2, 1], "needs_retry": True}
+        # }
+        pass
+    
+    def build_season_consensus(self, run_data: Dict[str, List[sofaschema.FootballMatchResultDetailed]]) -> Dict[int, Dict[str, Any]]:
+        """
+        Build consensus for entire season across all runs.
+        
+        Args:
+            run_data: Dict mapping run_id -> List[match_results]
+            
+        Returns:
+            Dict mapping match_id -> consensus_info
+        """
+        # TODO:
+        # 1. Get all unique match_ids across all runs
+        # 2. For each match_id:
+        #    a. Collect match data from all runs that have this match
+        #    b. Use build_match_consensus() to analyze
+        #    c. Store results
+        # 3. Return season-wide consensus results
+        pass
+
+    # ========================================================================
+    # COMPONENT GROUPING (HELPER METHODS)
+    # ========================================================================
+    
+    def _group_components_by_equality(self, component_name: str, 
+                                    components: List[Any]) -> List[List[Any]]:
+        """
+        Group component instances by equality (same data).
+        
+        Args:
+            component_name: Type of component being grouped
+            components: List of component instances to group
+            
+        Returns:
+            List of groups, where each group contains identical components
+        """
+        # TODO:
+        # 1. Initialize groups list
+        # 2. For each component:
+        #    a. Check if it matches any existing group
+        #    b. If yes, add to that group
+        #    c. If no, create new group
+        # 3. Return list of groups
+        #
+        # This replaces the hash grouping we were doing before
+        pass
+    
+    def _find_consensus_group(self, groups: List[List[Any]], 
+                            total_instances: int) -> Tuple[bool, Any]:
+        """
+        Find if any group meets the consensus threshold.
+        
+        Args:
+            groups: List of component groups
+            total_instances: Total number of component instances
+            
+        Returns:
+            (has_consensus, consensus_data) tuple
+        """
+        # TODO:
+        # 1. Calculate required group size for consensus (threshold * total)
+        # 2. Check if any group meets the requirement
+        # 3. Return (True, group_data) or (False, None)
+        pass
+
+    # ========================================================================
+    # ANALYSIS & REPORTING METHODS
+    # ========================================================================
+    
+    def identify_retry_candidates(self, season_consensus: Dict[int, Dict[str, Any]]) -> Dict[int, List[str]]:
+        """
+        Identify which match components need to be retried.
+        
+        Args:
+            season_consensus: Results from build_season_consensus()
+            
+        Returns:
+            Dict mapping match_id -> list_of_components_to_retry
+        """
+        # TODO:
+        # 1. Initialize retry candidates dict
+        # 2. For each match in season consensus:
+        #    a. Check each component consensus
+        #    b. If component lacks consensus, add to retry list
+        # 3. Return retry candidates
+        #
+        # Example return: {12345: ["stats", "incidents"], 12346: ["lineup"]}
+        pass
+    
+    def get_consensus_summary(self, season_consensus: Dict[int, Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Generate summary statistics about consensus results.
+        
+        Returns:
+            Summary stats (total matches, consensus rates, retry needs, etc.)
+        """
+        # TODO:
+        # 1. Count total matches
+        # 2. Count matches with full consensus
+        # 3. Count component-level consensus rates
+        # 4. Identify most problematic components
+        # 5. Return summary dict
+        pass
+
+    # ========================================================================
+    # UTILITY METHODS
+    # ========================================================================
+    
+    def _extract_component(self, match_data: sofaschema.FootballMatchResultDetailed, 
+                          component_name: str) -> Any:
+        """Extract specific component from match data."""
+        # TODO: Simple getattr with error handling
+        pass
+    
+    def _get_exclusion_fields(self, component_name: str) -> Set[str]:
+        """Get fields to exclude for this component type."""
+        # TODO: Return set from self.field_exclusions config
+        pass
+    
+    def _is_component_active(self, component_name: str) -> bool:
+        """Check if component should be processed."""
+        # TODO: Check against self.active_components
+        pass
+
+
+# ========================================================================
+# INTEGRATION WITH OVERALL ARCHITECTURE
+# ========================================================================
+
+class QualityAssessmentPipeline:
+    """
+    Shows how Comparator integrates with the overall quality system.
+    This replaces the separate ConsensusBuilder and HashGenerator classes.
+    """
+    
+    def __init__(self, tournament_id: int, season_id: int, config: DictConfig):
+        self.tournament_id = tournament_id
+        self.season_id = season_id
+        self.config = config
+        
+        # Core components
+        self.comparator = Comparator(config)
+        # self.storage = RunStorage(config, tournament_id, season_id)  # From your original design
+        # self.retry_manager = SelectiveRetryManager(config)  # From your original design
+    
+    def execute_quality_analysis_workflow(self, run_names: List[str]) -> Dict[str, Any]:
+        """
+        Main workflow using the Comparator class.
+        
+        Args:
+            run_names: List of run identifiers to analyze
+            
+        Returns:
+            Complete quality analysis results
+        """
+        logger.info(f"Starting quality analysis for runs: {run_names}")
+        
+        # Step 1: Load run data
+        # run_data = self._load_multiple_runs(run_names)
+        
+        # Step 2: Build consensus using Comparator
+        # season_consensus = self.comparator.build_season_consensus(run_data)
+        
+        # Step 3: Identify retry needs
+        # retry_candidates = self.comparator.identify_retry_candidates(season_consensus)
+        
+        # Step 4: Generate summary
+        # summary = self.comparator.get_consensus_summary(season_consensus)
+        
+        # Step 5: Return results for manual review
+        # return {
+        #     "season_consensus": season_consensus,
+        #     "retry_candidates": retry_candidates,
+        #     "summary": summary,
+        #     "needs_manual_review": len(retry_candidates) > 0
+        # }
+        pass
+
+
+# ========================================================================
+# USAGE EXAMPLES
+# ========================================================================
+
+def example_usage():
+    """Example of how to use the new Comparator-based system"""
+    
+    # Initialize
+    config = OmegaConf.load("quality_config.yaml")
+    comparator = Comparator(config)
+    
+    # Example 1: Compare two matches directly
+    # match1_run1 = ...  # From first scraping run
+    # match1_run2 = ...  # From second scraping run
+    # comparison_results = comparator.compare_match_all_components(match1_run1, match1_run2)
+    # print(f"Components match: {comparison_results}")
+    # # Output: {"base": True, "stats": False, "lineup": True, "incidents": True, "graph": True}
+    
+    # Example 2: Build consensus across multiple runs
+    # run_data = {
+    #     "week1_run": [match1_w1, match2_w1, match3_w1, ...],
+    #     "week2_run": [match1_w2, match2_w2, match3_w2, ...]
+    # }
+    # season_consensus = comparator.build_season_consensus(run_data)
+    
+    # Example 3: Find what needs to be retried
+    # retry_candidates = comparator.identify_retry_candidates(season_consensus)
+    # print(f"Matches needing retry: {retry_candidates}")
+    # # Output: {12345: ["stats"], 12346: ["incidents", "lineup"]}
+    
+    print("Comparator usage examples ready")
+
+
+# ========================================================================
+# UPDATED CONFIGURATION STRUCTURE
+# ========================================================================
+
+# quality_config.yaml now looks like:
+config_structure_example = """
+quality:
+  # Which components to analyze
+  active_components:
+    - "base"
+    - "stats"
+    - "lineup"
+    - "incidents"
+    - "graph"
+
+  # Fields to exclude when comparing components
+  comparison_exclusions:
+    base:
+      - "scraped_at"
+      - "currentPeriodStartTimestamp"
+    stats:
+      - "generated_at" 
+      - "processing_time"
+    lineup:
+      - "lastUpdated"
+      - "cached_at"
+    incidents:
+      - "processedAt"
+    graph:
+      - "calculatedAt"
+
+  # Consensus requirements
+  consensus:
+    threshold: 1.0  # 100% agreement required
+    min_runs_required: 2
+
+  # Component importance (optional - for future use)
+  component_priority:
+    base: 1.0      # Critical
+    stats: 0.8     # Important
+    lineup: 0.8    # Important
+    incidents: 0.6 # Nice to have
+    graph: 0.3     # Optional
+"""
+
+if __name__ == "__main__":
+    example_usage()

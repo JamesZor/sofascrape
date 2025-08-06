@@ -1,44 +1,26 @@
 # Quality assessment configuration
 quality:
   # Which components to process (can disable some for testing)
-  active_components:
-    - "base"
+  active_components: ["base", "stats", "lineup", "incidents", "graph"]
+#    - "base"
 #    - "stats" 
 #    - "lineup"
 #    - "incidents"
 #    - "graph"
-
-  # Component validation rules
-  component_rules:
-    base:
-      required: true
-    stats:
-      required: false
-    lineup:
-      required: false
-    incidents:
-      required: false
-    graph:
-      required: false
-
-  # Consensus requirements
-  consensus:
-    threshold: 1.0  # 100% agreement required
-    min_runs_required: 2
+  # Hash normalization (fields to ignore when hashing)
+  comparator_exclusions:
+    common: []
+    base: []
+    stats: []
+    lineup: []
+    incidents: []
+    graph: []
 
   # Retry configuration
   retry:
     max_attempts: 2
     delay_seconds: 30.0
     
-  # Hash normalization (fields to ignore when hashing)
-  hash_exclusions:
-    common: []
-    base: ["scraped_at","currentPeriodStartTimestamp"]
-    stats: ["generated_at"]
-    lineup: []
-    incidents: []
-    graph: []
 
 # Storage paths
 storage:
