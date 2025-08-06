@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional, Union
 
 from omegaconf import DictConfig, OmegaConf
 
+from sofascrape.schemas import general as sofaschemas
+
 logger = logging.getLogger(__name__)
 
 
@@ -149,7 +151,7 @@ class StorageHandler:
             return sorted(runs)[-1] + 1
         return 1
 
-    def save_scraping_run(self, run_data: Any) -> None:
+    def save_scraping_run(self, run_data: sofaschemas.SeasonScrapingResult) -> None:
         """
         Save a scrape with a name iterated.
         """
@@ -191,23 +193,33 @@ class StorageHandler:
 
         return files[0]
 
-    def load_run(self, run_number: int) -> Any:  # TODO change any to run type.
+    def load_run(self, run_number: int) -> sofaschemas.SeasonScrapingResult:
         """Loads the run, given the run number"""
-
         try:
             file_name: str = self.get_run_file(run_number=run_number)
             file: Path = self.dir_run / file_name
+
             with open(file, "rb") as f:
                 run_data = pickle.load(f)
 
+            if not isinstance(run_data, sofaschemas.SeasonScrapingResult):
+                raise TypeError(
+                    f"Loaded data is not a SeasonScrapingResult, got {type(run_data)}"
+                )
+
             return run_data
+
         except ValueError as ve:
-            logger.error(f"Error with run number: {str(ve)}.")
-
+            logger.error(f"Error with run number: {str(ve)}")
+            raise  # Re-raise the ValueError
+        except (FileNotFoundError, pickle.UnpicklingError) as e:
+            logger.error(f"Failed to load run {run_number}: {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"An error occured trying to load {run_number =}: {str(e)}.")
+            logger.error(f"Unexpected error loading run {run_number}: {str(e)}")
+            raise
 
-    def load_avaiable_runs(self) -> Dict[str, Any]:
+    def load_avaiable_runs(self) -> Dict[str, sofaschemas.SeasonScrapingResult]:
         """Load all available runs for this season"""
 
         runs_results: Dict[str, Any] = {}
