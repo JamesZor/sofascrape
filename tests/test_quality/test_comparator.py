@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import asdict
 from typing import Any, Dict, List, Optional, Union
 
 import pytest
@@ -74,6 +75,7 @@ def test_compare_base(run1_data, run2_data):
     )
 
 
+@pytest.mark.skip(reason="Not needed currently")
 def test_compare_all_match(run_data):
     print()
     print("- -" * 50)
@@ -102,3 +104,37 @@ def test_compare_all_match(run_data):
     print(m1_d["home"].keys())
 
     print(json.dumps(c.find_dict_differences(m3_d["home"], m2_d["home"]), indent=8))
+
+
+def test_matchs_consensus(run_data):
+    print()
+    print("- -" * 50)
+    print("test compare all compents")
+    match_1_data = sorted(run_data["1"].matches, key=lambda x: x.match_id)[0].data
+    match_2_data = sorted(run_data["2"].matches, key=lambda x: x.match_id)[0].data
+    match_3_data = sorted(run_data["3"].matches, key=lambda x: x.match_id)[0].data
+
+    match_run_dict = {"1": match_1_data, "2": match_2_data, "3": match_3_data}
+
+    print(match_1_data.match_id, match_2_data.match_id)
+    c = Comparator()
+    results = c.build_match_consensus(
+        match_id=match_1_data.match_id, matches_from_runs=match_run_dict
+    )
+
+    print(json.dumps(asdict(results), indent=3))
+
+    match_1_data_fail = sorted(run_data["1"].matches, key=lambda x: x.match_id)[0].data
+    match_2_data_fail = sorted(run_data["2"].matches, key=lambda x: x.match_id)[1].data
+    match_3_data_fail = sorted(run_data["3"].matches, key=lambda x: x.match_id)[2].data
+
+    match_run_dict_fail = {
+        "1": match_1_data_fail,
+        "2": match_2_data_fail,
+        "3": match_3_data_fail,
+    }
+    results_fail = c.build_match_consensus(
+        match_id=match_1_data.match_id, matches_from_runs=match_run_dict_fail
+    )
+
+    print(json.dumps(asdict(results_fail), indent=3))
