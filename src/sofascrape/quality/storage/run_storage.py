@@ -50,6 +50,10 @@ class StorageHandler:
         self.season_id: int = season_id
         self._setup_directories()
 
+        self.season_event_details: Optional[sofaschemas.EventsListSchema] = (
+            self.get_season_event_details()
+        )
+
         logger.debug("Init completed, dir set up.")
 
     def _get_config(self) -> DictConfig:
@@ -133,6 +137,72 @@ class StorageHandler:
         self._set_tournament_dir()
         self._set_season_dir()
         self._set_sub_dir()
+
+    # ========================================================================
+    # season event method
+    # ========================================================================
+    def get_season_event_details(self) -> Optional[sofaschemas.EventsListSchema]:
+        """Check if we have saved events list for a season before"""
+        file_path: Path = self.dir_season / "season_event_details.pkl"
+
+        if not file_path.is_file():
+            logger.info(
+                f"No season event details found for {self.tournament_id=}, {self.season_id=}"
+            )
+            return None
+
+        try:
+            with open(file_path, "rb") as f:
+                season_event_details = pickle.load(f)
+
+            if isinstance(season_event_details, sofaschemas.EventsListSchema):
+                return season_event_details
+            else:
+                logger.warning(
+                    f"Loaded data is not EventsListSchema type for {self.tournament_id=}, {self.season_id=}"
+                )
+                return None
+
+        except (FileNotFoundError, pickle.UnpicklingError) as e:
+            logger.error(
+                f"Failed to load season event details for {self.tournament_id=}, {self.season_id=}: {str(e)}"
+            )
+            raise
+        except Exception as e:
+            logger.error(
+                f"Unexpected error loading season event details for {self.tournament_id=}, {self.season_id=}: {str(e)}"
+            )
+            raise
+
+    def save_season_event_details(
+        self, event_details: sofaschemas.EventsListSchema
+    ) -> None:
+        """Save events list for a season"""
+        file_path: Path = self.dir_season / "season_event_details.pkl"
+
+        try:
+            # Ensure directory exists
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+
+            with open(file_path, "wb") as f:
+                pickle.dump(event_details, f)
+
+            # Update the instance variable
+            self.season_event_details = event_details
+            logger.info(
+                f"Saved season event details for {self.tournament_id=}, {self.season_id=}"
+            )
+
+        except (OSError, pickle.PicklingError) as e:
+            logger.error(
+                f"Failed to save season event details for {self.tournament_id=}, {self.season_id=}: {str(e)}"
+            )
+            raise
+        except Exception as e:
+            logger.error(
+                f"Unexpected error saving season event details for {self.tournament_id=}, {self.season_id=}: {str(e)}"
+            )
+            raise
 
     # ========================================================================
     # run data methods
