@@ -250,7 +250,7 @@ class StorageHandler:
         return [
             path.name
             for path in list(self.dir_analysis.iterdir())
-            if str(path.name).startswith("consenus")
+            if str(path.name).startswith("consensus")
         ]
 
     def _list_consensus_number(self) -> List[int]:

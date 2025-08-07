@@ -6,6 +6,7 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 # DATACLASSES FOR RESULTS
 # ============================================================================
+FOOTBALL_COMPONENTS = ["base", "stats", "lineup", "incidents", "graph"]
 
 
 @dataclass
@@ -102,6 +103,18 @@ class MatchConsensusResult:
 
 
 @dataclass
+class MatchGoldenClass:
+    """handle the matching between runs and component (Football)"""
+
+    match_id: int
+    base: int  # This will be a suitable run to pick
+    stats: int
+    lineup: int
+    incidents: int
+    graph: int
+
+
+@dataclass
 class SeasonConsensusResult:
     """Complete consensus analysis for an entire season"""
 
@@ -189,34 +202,34 @@ class SeasonConsensusResult:
             all_outliers.update(result.all_outlier_runs)
         return all_outliers
 
-    def get_retry_plan(self) -> Dict[str, Dict[int, List[str]]]:
-        """Get MINIMAL retry plan - only components with NO consensus"""
-        retry_plan = {run_id: {} for run_id in self.run_ids}
+    def get_retry_dict(self) -> Dict[int, List[str]]:
+        """Return a dict of matchs by componets to retry"""
+        retry_plan: Dict[int, List[str]] = {}
+        for match_id, match_result in self.match_results.items():
+            if match_result.has_consensus:
+                continue
+            retry_plan[match_id] = match_result.retry_components
 
-        for match_id, result in self.match_results.items():
-            # Only retry components that have NO consensus at all
-            for (
-                comp_name
-            ) in result.retry_components:  # These are components with NO agreeing pairs
-                # For components with no consensus, all runs are problematic
-                comp_result = result.component_results[comp_name]
-                all_runs_for_component = set()
+        for match_id in self.matches_in_single_run_only:
+            retry_plan[match_id] = FOOTBALL_COMPONENTS
 
-                # Get all runs involved in this component
-                for run1, run2 in (
-                    comp_result.agreed_pairs + comp_result.disagreed_pairs
-                ):
-                    all_runs_for_component.add(run1)
-                    all_runs_for_component.add(run2)
+        return retry_plan
 
-                # Add all runs to retry for this component
-                for run_id in all_runs_for_component:
-                    if match_id not in retry_plan[run_id]:
-                        retry_plan[run_id][match_id] = []
-                    retry_plan[run_id][match_id].append(comp_name)
+    def get_golden_dataset_dict(self) -> Dict[int, Dict[str, int]]:
+        golden_results_dict: Dict[int, Dict[str, int]] = {}
+        for match_id, match_result in self.match_results.items():
+            if not match_result.has_consensus:
+                continue
+            # Build component values dict
+            component_values = {
+                component_name: int(component_result.agreed_pairs[0][0])
+                for component_name, component_result in match_result.component_results.items()
+            }
 
-        # Remove empty runs
-        return {run_id: matches for run_id, matches in retry_plan.items() if matches}
+            # Create object with all values at once
+            golden_results_dict[match_id] = component_values
+
+        return golden_results_dict
 
     def get_golden_dataset_plan(self) -> Dict[int, Dict[str, Set[str]]]:
         """Get plan for golden dataset - which runs to use for each component"""
@@ -277,18 +290,4 @@ class SeasonConsensusResult:
         print(
             f"Complete failures: {len(self.matches_needing_retry)} ({len(self.matches_needing_retry)/len(self.match_results)*100:.1f}%)"
         )
-
-        retry_plan = self.get_retry_plan()
-        if retry_plan:
-            print(f"\n--- RETRY PLAN BY RUN ---")
-            for run_id, matches in retry_plan.items():
-                total_components = sum(
-                    len(components) for components in matches.values()
-                )
-                print(
-                    f"{run_id}: {len(matches)} matches, {total_components} components"
-                )
-
-        print(f"\nTotal runs needing retry: {len(self.all_outlier_runs)}")
-        print(f"All outlier runs: {list(self.all_outlier_runs)}")
         print("=" * 40)

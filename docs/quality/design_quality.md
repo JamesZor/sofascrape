@@ -2,7 +2,7 @@
 
 # Architecture Overview 
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Run Manager   │───▶│  Data Comparator │───▶│ Quality Assessor│
+│   Run Manager   │───▶│  Data Comparator │───▶│ SeasonConsensus │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
          │                                               │
          ▼                                               ▼
@@ -25,14 +25,13 @@ src/sofascrape/quality/
 │   ├── __init__.py
 │   ├── data_models.py      # All dataclasses and enums
 │   ├── comparator.py   # comparison of runs.
-│   ├── quality_assessor.py # Binary component validation
-│   ├── ? consensus_builder.py # Cross-run consensus logic
+│   ├── consensus_builder.py # Cross-run consensus logic
 │   ├── retry_manager.py    # Selective component retries
 │   └── golden_builder.py   # Final dataset creation
 ├── storage/
 │   ├── __init__.py
 │   └── run_storage.py      # Save/load runs and results
-├── reports/
+├── ? reports/
 │   ├── __init__.py
 │   └── review_reports.py   # Manual review interfaces
 └── manager.py              # Main orchestrator class
