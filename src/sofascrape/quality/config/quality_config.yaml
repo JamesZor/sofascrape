@@ -30,6 +30,11 @@ storage:
   golden_subdir: "golden"
   logs_subdir: "logs"
 
+  save_file_formats:
+    run_full: "{number}_full_{date}.pkl"
+    run_part: "{number}_part_{date}.pkl"
+    consensus: "consensus_{number}_{date}.pkl"
+
   file_formats:
     tournament: "tournament_{tournament_id}"
     season: "season_{season_id}"

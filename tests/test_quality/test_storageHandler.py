@@ -32,7 +32,7 @@ def test_basic_setup():
     assert storage_handler.config == cfg, "config not loaded and set"
 
 
-@pytest.mark.skip(reason="Not needed currently")
+# @pytest.mark.skip(reason="Not needed currently")
 def test_saving():
     print()
     print("- -" * 50)

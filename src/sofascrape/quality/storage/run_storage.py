@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from omegaconf import DictConfig, OmegaConf
 
+from sofascrape.quality.core.dataclasses import SeasonConsensusResult
 from sofascrape.schemas import general as sofaschemas
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,9 @@ class StorageHandler:
 
     """
 
+    # ========================================================================
+    # Set up
+    # ========================================================================
     def __init__(
         self, tournament_id: int, season_id: int, config: Optional[DictConfig] = None
     ) -> None:
@@ -40,7 +44,7 @@ class StorageHandler:
         if config is not None:
             self.config: DictConfig = config
         else:
-            self.config: DictConfig = self._get_config()
+            self.config: DictConfig = self._get_config()  # type: ignore[no-redef]
 
         self.tournament_id: int = tournament_id
         self.season_id: int = season_id
@@ -50,7 +54,7 @@ class StorageHandler:
 
     def _get_config(self) -> DictConfig:
         config_path = (Path(__file__).parent.parent) / "config" / "quality_config.yaml"
-        return OmegaConf.load(config_path)
+        return OmegaConf.load(config_path)  # type: ignore[return-value]
 
     def _set_base_dir(self, home: Path) -> None:
         """Set the data dir location"""
@@ -130,7 +134,9 @@ class StorageHandler:
         self._set_season_dir()
         self._set_sub_dir()
 
-    ###
+    # ========================================================================
+    # run data methods
+    # ========================================================================
 
     def _list_run_files(self) -> List[str]:
         """
@@ -158,7 +164,9 @@ class StorageHandler:
         try:
             run_number: int = self._next_run_number()
             date_time_str: str = datetime.now().strftime("%d%m%y_%H%m")
-            run_name: str = f"{run_number}_{date_time_str}.pkl"
+            run_name: str = self.config.storage.save_file_formats.run_full.format(
+                number=run_number, date=date_time_str
+            )
             file: Path = self.dir_run / run_name
             logger.debug(f"Saving {run_number =} @ {file =} ...")
             with open(file, "wb") as f:
@@ -233,3 +241,42 @@ class StorageHandler:
         logger.info(f"Loaded {len(runs_results.keys())} runs: {runs_results.keys()}.")
 
         return runs_results
+
+    # ========================================================================
+    # consenus methods
+    # ========================================================================
+    def list_consensus_files(self) -> List[str]:
+        return [
+            path.name
+            for path in list(self.dir_analysis.iterdir())
+            if str(path.name).startswith("consenus")
+        ]
+
+    def _list_consensus_number(self) -> List[int]:
+        return [
+            int(str(file_name).split("_")[1])
+            for file_name in self.list_consensus_files()
+        ]
+
+    def _next_consensus_number(self) -> int:
+        if numbers := self._list_consensus_number():
+            return sorted(numbers)[-1] + 1
+        return 1
+
+    def save_consensus(self, consensus_data: SeasonConsensusResult) -> None:
+        """
+        Save a season consensus with a name iterated.
+        """
+        try:
+            number: int = self._next_consensus_number()
+            date_time_str: str = datetime.now().strftime("%d%m%y_%H%m")
+            file_name: str = self.config.storage.save_file_formats.consensus.format(
+                number=number, date=date_time_str
+            )
+            file: Path = self.dir_run / file_name
+            logger.debug(f"Saving {number =} @ {file =} ...")
+            with open(file, "wb") as f:
+                pickle.dump(obj=consensus_data, file=f)
+            logger.info(f"File {number =} saved @ {file = }.")
+        except Exception as e:
+            logger.error(f"Failed to save run {number}, @{file=} : {str(e)}.")
