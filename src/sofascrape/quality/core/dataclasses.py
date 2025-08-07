@@ -190,18 +190,51 @@ class SeasonConsensusResult:
         return all_outliers
 
     def get_retry_plan(self) -> Dict[str, Dict[int, List[str]]]:
-        """Get detailed retry plan organized by run_id"""
+        """Get MINIMAL retry plan - only components with NO consensus"""
         retry_plan = {run_id: {} for run_id in self.run_ids}
 
         for match_id, result in self.match_results.items():
-            for comp_name, outlier_runs in result.outlier_runs_by_component.items():
-                for run_id in outlier_runs:
+            # Only retry components that have NO consensus at all
+            for (
+                comp_name
+            ) in result.retry_components:  # These are components with NO agreeing pairs
+                # For components with no consensus, all runs are problematic
+                comp_result = result.component_results[comp_name]
+                all_runs_for_component = set()
+
+                # Get all runs involved in this component
+                for run1, run2 in (
+                    comp_result.agreed_pairs + comp_result.disagreed_pairs
+                ):
+                    all_runs_for_component.add(run1)
+                    all_runs_for_component.add(run2)
+
+                # Add all runs to retry for this component
+                for run_id in all_runs_for_component:
                     if match_id not in retry_plan[run_id]:
                         retry_plan[run_id][match_id] = []
                     retry_plan[run_id][match_id].append(comp_name)
 
         # Remove empty runs
         return {run_id: matches for run_id, matches in retry_plan.items() if matches}
+
+    def get_golden_dataset_plan(self) -> Dict[int, Dict[str, Set[str]]]:
+        """Get plan for golden dataset - which runs to use for each component"""
+        golden_plan: dict = {}
+
+        for match_id, result in self.match_results.items():
+            if not result.has_consensus:
+                continue  # Skip matches with no consensus
+
+            golden_plan[match_id] = {}
+
+            for comp_name, comp_result in result.component_results.items():
+                if comp_result.has_consensus:
+                    # Use data from consensus runs
+                    golden_plan[match_id][comp_name] = comp_result.consensus_runs
+                # If no consensus, this component won't be in golden dataset
+
+        return golden_plan
 
     def list_outlier_matches(self) -> Dict[int, Dict[str, Any]]:
         """List all matches with outliers and their details"""
@@ -244,28 +277,6 @@ class SeasonConsensusResult:
         print(
             f"Complete failures: {len(self.matches_needing_retry)} ({len(self.matches_needing_retry)/len(self.match_results)*100:.1f}%)"
         )
-
-        if self.matches_with_outliers:
-            print(
-                f"\n--- MATCHES WITH OUTLIERS ({len(self.matches_with_outliers)}) ---"
-            )
-            outlier_details = self.list_outlier_matches()
-            for match_id, details in list(outlier_details.items())[:5]:  # Show first 5
-                print(f"Match {match_id}: outlier runs {details['outlier_runs']}")
-                for comp, runs in details["components_with_outliers"].items():
-                    print(f"  {comp}: {list(runs)}")
-            if len(outlier_details) > 5:
-                print(f"  ... and {len(outlier_details)-5} more")
-
-        if self.matches_needing_retry:
-            print(f"\n--- COMPLETE FAILURES ({len(self.matches_needing_retry)}) ---")
-            failed_details = self.list_failed_matches()
-            for match_id, details in list(failed_details.items())[:5]:  # Show first 5
-                print(
-                    f"Match {match_id}: failed components {details['failed_components']}"
-                )
-            if len(failed_details) > 5:
-                print(f"  ... and {len(failed_details)-5} more")
 
         retry_plan = self.get_retry_plan()
         if retry_plan:

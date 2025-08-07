@@ -245,6 +245,7 @@ class StorageHandler:
     # ========================================================================
     # consenus methods
     # ========================================================================
+
     def list_consensus_files(self) -> List[str]:
         return [
             path.name
@@ -273,10 +274,83 @@ class StorageHandler:
             file_name: str = self.config.storage.save_file_formats.consensus.format(
                 number=number, date=date_time_str
             )
-            file: Path = self.dir_run / file_name
+            file: Path = self.dir_analysis / file_name
             logger.debug(f"Saving {number =} @ {file =} ...")
             with open(file, "wb") as f:
                 pickle.dump(obj=consensus_data, file=f)
             logger.info(f"File {number =} saved @ {file = }.")
         except Exception as e:
-            logger.error(f"Failed to save run {number}, @{file=} : {str(e)}.")
+            logger.error(f"Failed to save consenus {number}, @{file=} : {str(e)}.")
+
+    def load_most_current_consensus(self) -> SeasonConsensusResult:
+        """Finds the newest consensus and loads it"""
+
+        files: list[str] = self.list_consensus_files()
+
+        try:
+            file = sorted(files, key=lambda x: int(x.split("_")[1]))[-1]
+
+            file_path: Path = self.dir_analysis / file
+
+            with open(file_path, "rb") as f:
+                consensus_data = pickle.load(f)
+
+            if not isinstance(consensus_data, SeasonConsensusResult):
+                raise TypeError(
+                    f" Loaded data is not a SeasonConsensusResult, got {type(consensus_data) =}."
+                )
+
+            return consensus_data
+
+        except (FileNotFoundError, pickle.UnpicklingError) as e:
+            logger.error(f"Failed to load consenus: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error loading consenus: {str(e)}")
+            raise
+
+    def _list_available_consensus_numbers(self) -> List[int]:
+        """Get the list of consensus numbers saved in the analysis directory"""
+        return [
+            int(consensus_file.split("_")[1])
+            for consensus_file in self.list_consensus_files()
+        ]
+
+    def get_consensus_file(self, consensus_number: int) -> str:
+        """Get the file for the consensus number, checks if it exists"""
+        # Check consensus number is there
+        if consensus_number not in set(self._list_available_consensus_numbers()):
+            logger.error(
+                f"Consensus number {consensus_number = } is not in data {self._list_available_consensus_numbers() =}."
+            )
+            raise ValueError(
+                "consensus_number must be in the available consensus numbers"
+            )
+
+        # Get file name - match pattern: consensus_{number}_{date}.pkl
+        files: List[str] = [
+            file
+            for file in self.list_consensus_files()  # or self._list_consensus_files()
+            if (
+                file.startswith(f"consensus_{consensus_number}_")
+                and file.endswith(".pkl")
+            )
+        ]
+
+        # Check empty
+        if not files:
+            logger.error(
+                f"Could not find any consensus files for {consensus_number = } in {self.dir_analysis}."
+            )
+            raise FileNotFoundError(
+                f"No consensus file found for consensus number {consensus_number}"
+            )
+
+        if len(files) > 1:
+            logger.warning(
+                f"More than one file found for {consensus_number = }, returning the first\n{files =}"
+            )
+        else:
+            logger.info(f"File found for {consensus_number = } in {self.dir_analysis}.")
+
+        return files[0]

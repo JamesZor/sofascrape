@@ -155,19 +155,28 @@ def test_season_consensus(run_data):
     season_result = c.build_season_consensus(
         run_data=runs_dict, tournament_id=1, season_id=123456
     )
+    s = StorageHandler(1, 123456)
+    s.save_consensus(season_result)
 
     # print(results)
     print(f"Season summary: {season_result.season_summary}")
     print(
-        f"Perfect consensus matches: {season_result.matches_with_perfect_consensus[:5]}"
+        f"Perfect consensus matches:  (limited 5){season_result.matches_with_perfect_consensus[:5]}"
     )
-    print(f"Matches with outliers: {season_result.matches_with_outliers[:5]}")
-    print(f"Complete failures: {season_result.matches_needing_retry[:5]}")
+    print(
+        f"Matches with outliers:  (limited 5){season_result.matches_with_outliers[:5]}"
+    )
+    print(f"Complete failures: (limited 5) {season_result.matches_needing_retry[:5]}")
 
-    # season_result.print_retry_summary()
+    season_result.print_retry_summary()
     # Get specific retry details
     retry_plan = season_result.get_retry_plan()
-    print(f"Retry plan: {retry_plan}")
+    print(f"Retry plan: {json.dumps(retry_plan, indent=5)}.")
+
+    golden_plan = season_result.get_golden_dataset_plan()
+
+    print(len(golden_plan.keys()))
+    print(len(retry_plan["1"].keys()))
     #
     # # List outlier match details
     # outlier_matches = season_result.list_outlier_matches()
