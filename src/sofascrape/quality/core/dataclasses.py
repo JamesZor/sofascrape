@@ -203,7 +203,11 @@ class SeasonConsensusResult:
         return all_outliers
 
     def get_retry_dict(self) -> Dict[int, List[str]]:
-        """Return a dict of matchs by componets to retry"""
+        """Return a dict of matchs by componets to retry
+        Example return:
+        {12476988: ['incidents'], 12476947: ['base', 'stats', 'lineup', 'incidents', 'graph']}
+
+        """
         retry_plan: Dict[int, List[str]] = {}
         for match_id, match_result in self.match_results.items():
             if match_result.has_consensus:
@@ -216,6 +220,10 @@ class SeasonConsensusResult:
         return retry_plan
 
     def get_golden_dataset_dict(self) -> Dict[int, Dict[str, int]]:
+        """
+        Example return:
+        {12476980: {'graph': 2, 'stats': 2, 'lineup': 2, 'base': 2, 'incidents': 2}, 12476946: {'graph': 1, 'stats': 1, 'lineup': 2, 'base': 1, 'incidents': 1}}
+        """
         golden_results_dict: Dict[int, Dict[str, int]] = {}
         for match_id, match_result in self.match_results.items():
             if not match_result.has_consensus:

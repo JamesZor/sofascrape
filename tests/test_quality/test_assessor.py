@@ -7,7 +7,6 @@ import pytest
 from omegaconf import DictConfig, OmegaConf
 
 import sofascrape.schemas.general as sofaschema
-from sofascrape.quality.core.assessor import SeasonAssessor
 from sofascrape.quality.core.comparator import Comparator
 from sofascrape.quality.core.dataclasses import (
     ComponentConsensusResult,

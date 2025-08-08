@@ -245,6 +245,27 @@ class StorageHandler:
         except Exception as e:
             logger.error(f"Failed to save run {run_number}, @{file=} : {str(e)}.")
 
+    def save_scraping_run_retry(
+        self, run_data: sofaschemas.SeasonScrapingResult
+    ) -> None:
+        """
+        Save a scrape retry with a name iterated.
+        run_part: "{number}_part_{date}.pkl"
+        """
+        try:
+            run_number: int = self._next_run_number()
+            date_time_str: str = datetime.now().strftime("%d%m%y_%H%m")
+            run_name: str = self.config.storage.save_file_formats.run_part.format(
+                number=run_number, date=date_time_str
+            )
+            file: Path = self.dir_run / run_name
+            logger.debug(f"Saving {run_number =} @ {file =} ...")
+            with open(file, "wb") as f:
+                pickle.dump(obj=run_data, file=f)
+            logger.info(f"File {run_number =} saved @ {file = }.")
+        except Exception as e:
+            logger.error(f"Failed to save run {run_number}, @{file=} : {str(e)}.")
+
     def get_run_file(self, run_number: int) -> str:
         """Get the file for the run number, checks if in"""
         # Check run number is there
