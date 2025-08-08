@@ -41,14 +41,15 @@ class SeasonQualityManager:
     # ========================================================================
     # Scraping operations
     # ========================================================================
+    # TEST:
     def execute_scraping_run(self) -> None:
         """Execute a single scraping run and save results"""
         season_scraper = SeasonFootballScraper(
             tournamentid=self.tournament_id, seasonid=self.season_id
         )
         # TODO: Change to full once working and tested.
-        season_scraper._scrape_debug(use_threading=True, max_workers=3)
-        # season_scraper.scrape(use_threading=True, max_workers=10)
+        # season_scraper._scrape_debug(use_threading=True, max_workers=3)
+        season_scraper.scrape(use_threading=True, max_workers=10)
 
         self.storage.save_scraping_run(season_scraper.data)
 
@@ -58,6 +59,7 @@ class SeasonQualityManager:
                     season_scraper.events_scraper.data  # type: ignore[union-attr]
                 )
 
+    # TEST:
     def execute_scraping_retry(self, retry: Dict[str, List[str]]) -> None:
         """Executes a retry scrape for the matches/componets given for the retry.
         Saves the results as a partial run in the runs dir.
@@ -73,6 +75,7 @@ class SeasonQualityManager:
     # Comparator operations
     # ========================================================================
 
+    # TEST:
     def load_available_runs(
         self,
     ) -> Dict[str, List[sofaschema.FootballMatchResultDetailed]]:
@@ -88,6 +91,7 @@ class SeasonQualityManager:
             for run_id, item in self.storage.load_avaiable_runs().items()
         }
 
+    # TEST:
     def build_consensus_analysis(self) -> SeasonConsensusResult:
         """Build consensus analysis across specified runs"""
         runs_data_dicts = self.load_available_runs()
@@ -113,17 +117,44 @@ class SeasonQualityManager:
     # golden operations
     # ========================================================================
 
+    # TEST:
     def load_available_runs_dict(
         self,
-    ) -> Dict[str, Dict[int, sofaschema.FootballMatchResultDetailed]]:
+    ) -> Dict[int, Dict[int, sofaschema.FootballMatchResultDetailed]]:
 
         runs = self.load_available_runs()
 
-        runs_dict: Dict[str, Dict[int, sofaschema.FootballMatchResultDetailed]] = {}
+        runs_dict: Dict[int, Dict[int, sofaschema.FootballMatchResultDetailed]] = {}
 
         for run_id, list_match_results in runs.items():
-            runs_dict[run_id] = {match.match_id: match for match in list_match_results}
+            runs_dict[int(run_id)] = {
+                match.match_id: match
+                for match in list_match_results
+                if match is not None
+            }
 
         return runs_dict
 
-    def build_golden_seaosn_dataset(self, golden_dict: Dict
+    # TEST:
+    def build_golden_seaosn_dataset(
+        self, golden_dict: Dict[int, Dict[str, int]]
+    ) -> Dict[int, sofaschema.FootballMatchResultDetailed]:
+        """Complie the good data together from all the runs and retry datasets.
+        Example of golden_dict:
+        {12476980: {'graph': 2, 'stats': 2, 'lineup': 2, 'base': 2, 'incidents': 2}, 12476946: {'graph': 1, 'stats': 1, 'lineup': 2, 'base': 1, 'incidents': 1}}
+
+        """
+        runs = self.load_available_runs_dict()
+
+        results: Dict[int, sofaschema.FootballMatchResultDetailed] = {}
+
+        for match_id, golden_componets in golden_dict.items():
+            match_data: Dict = {"match_id": match_id}
+            for compoent_name, runID in golden_componets.items():
+                match_data[compoent_name] = getattr(
+                    runs[runID][match_id], compoent_name
+                )
+
+            results[match_id] = sofaschema.FootballMatchResultDetailed(**match_data)
+
+        return results

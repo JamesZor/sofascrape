@@ -146,10 +146,10 @@ class ScoreFootballSchema(ConvertibleBaseModel):
 
 
 class CountrySchema(ConvertibleBaseModel):
-    name: str
-    slug: str
-    alpha2: str
-    alpha3: str
+    name: Optional[str] = None
+    slug: Optional[str] = None
+    alpha2: Optional[str] = None
+    alpha3: Optional[str] = None
 
 
 class TeamColorsSchema(ConvertibleBaseModel):
@@ -165,7 +165,7 @@ class TeamSchema(ConvertibleBaseModel):
     nameCode: str
     gender: str
     sport: SportSchema
-    country: CountrySchema
+    country: Optional[CountrySchema]
     teamColors: TeamColorsSchema
 
     def _get_nested_fields(self) -> List[str]:
@@ -327,7 +327,7 @@ class RefereeSchema(ConvertibleBaseModel):
     yellowRedCards: int
     games: int
     sport: SportSchema
-    country: CountrySchema
+    country: Optional[CountrySchema] = None
 
     def _get_nested_fields(self) -> List[str]:
         return ["sport", "country"]
@@ -552,7 +552,7 @@ class LineupPlayerEntrySchema(ConvertibleBaseModel):
     shirtNumber: Optional[int] = None
     jerseyNumber: Optional[str] = None
     position: Optional[str] = None
-    substitute: bool
+    substitute: Optional[bool] = None
     captain: Optional[bool] = None
     statistics: Optional[PlayerStatisticsSchema] = None
 
@@ -596,7 +596,7 @@ class FootballLineupSchema(ConvertibleBaseModel):
 ########################################
 #### incidents
 ########################################
-# TODO
+# TODO:
 """
 INFO:sofascrape.football.matchScraper:Successfully scraped STATS for match 12476986
 WARNING:sofascrape.football.incidentsComponent:Incidents validation failed for event, self.matchid =12477110, 1 validation error for FootballIncidentsSchema
@@ -680,6 +680,22 @@ class SubstitutionIncidentSchema(ConvertibleBaseModel):
     reversedPeriodTime: int
 
 
+class InGamePenaltySchema(ConvertibleBaseModel):
+    incidentType: Literal["inGamePenalty"] = (
+        "inGamePenalty"  # Use Literal instead of str
+    )
+    # Make fields optional that might not be present in the data
+    player: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    playerName: Optional[str] = None
+    reason: Optional[str] = None
+    rescinded: Optional[bool] = None
+    id: Optional[int] = None
+    time: Optional[int] = None
+    isHome: Optional[bool] = None
+    incidentClass: Optional[str] = None  # "yellow", "red"
+    reversedPeriodTime: Optional[int] = None
+
+
 class CardIncidentSchema(ConvertibleBaseModel):
     """Card incidents (yellow, red)"""
 
@@ -739,6 +755,7 @@ class TeamColorsIncidentSchema(ConvertibleBaseModel):
 # Add discriminator to the Union using Annotated
 IncidentType = Annotated[
     Union[
+        InGamePenaltySchema,
         PeriodIncidentSchema,
         InjuryTimeIncidentSchema,
         SubstitutionIncidentSchema,
@@ -777,7 +794,7 @@ class GraphPointSchema(ConvertibleBaseModel):
 class FootballGraphSchema(ConvertibleBaseModel):
     """Complete football graph/momentum data"""
 
-    graphPoints: List[GraphPointSchema]
+    graphPoints: Optional[List[GraphPointSchema]] = None
     periodTime: int  # Length of each period (usually 45 minutes)
     overtimeLength: int  # Length of overtime periods (usually 15 minutes)
     periodCount: int  # Number of periods (usually 2 for football)
@@ -874,7 +891,33 @@ class FootballMatchResultDetailed(ConvertibleBaseModel):
     graph: Optional[FootballGraphSchema] = None
 
     # Detailed error tracking
-    errors: MatchScrapingErrors
+    errors: Optional[MatchScrapingErrors] = None
+
+    # Convenience properties for checking data availability
+    @property
+    def has_base_data(self) -> bool:
+        """Check if base component data is available"""
+        return self.base is not None
+
+    @property
+    def has_stats_data(self) -> bool:
+        """Check if stats component data is available"""
+        return self.stats is not None
+
+    @property
+    def has_lineup_data(self) -> bool:
+        """Check if lineup component data is available"""
+        return self.lineup is not None
+
+    @property
+    def has_incidents_data(self) -> bool:
+        """Check if incidents component data is available"""
+        return self.incidents is not None
+
+    @property
+    def has_graph_data(self) -> bool:
+        """Check if graph component data is available"""
+        return self.graph is not None
 
     @property
     def success_rate(self) -> str:

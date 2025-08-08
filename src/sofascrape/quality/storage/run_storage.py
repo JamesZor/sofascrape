@@ -445,3 +445,19 @@ class StorageHandler:
             logger.info(f"File found for {consensus_number = } in {self.dir_analysis}.")
 
         return files[0]
+
+    # ========================================================================
+    # golden data methods
+    # ========================================================================
+    # HACK: - Add more functions - currently the save will over write data
+
+    def save_golden_dataset(
+        self, golden_data: Dict[int, sofaschemas.FootballMatchResultDetailed]
+    ) -> None:
+        try:
+            file: Path = self.dir_golden / "golden_data.pkl"
+            with open(file, "wb") as f:
+                pickle.dump(obj=golden_data, file=f)
+            logger.info(f"File golden saved @ {file = }.")
+        except Exception as e:
+            logger.error(f"Faid @{file=} : {str(e)}.")

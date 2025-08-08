@@ -24,8 +24,18 @@ def tournamentscraper_1(get_driver):
     return tournamentscraper_id1
 
 
+@pytest.fixture
 def test_process(tournamentscraper_1):
     results = tournamentscraper_1.process()
+    assert results is not None, "Error getting the data."
+    for season in results.seasons[:10]:
+        print(season)
+
+
+def test_process_55(get_driver):
+    """scot champ id 55"""
+    tournamentscraper = SeasonsComponentScraper(tournamentid=55, webdriver=get_driver)
+    results = tournamentscraper.process()
     assert results is not None, "Error getting the data."
     for season in results.seasons[:10]:
         print(season)
