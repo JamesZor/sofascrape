@@ -4,7 +4,7 @@ data_extraction:
   include_data_types:
     - matches
     - match_stats
-#    - player_stats
+    - player_stats
     - incidents
 #    - momentum
   
@@ -95,9 +95,9 @@ output:
     prefix: "football_data"                          # Base filename
     include_timestamp: false                         # Add "_20240101_120000"
     tournament_mapping:                              # Custom tournament names
-      54: "premier_league"
       23: "championship"
-      55: "scottish_premier"
+      54: "scottish_premier"
+      55: "scottish_champ"
   
   # CSV export settings
   csv_options:
@@ -109,7 +109,7 @@ output:
   
   # Directory organization
   directory_structure:
-    base_dir: "output"             # Root output folder
+    base_dir: "/home/james/bet_project/football/"             # Root output folder
     by_tournament: true            # Create tournament subfolders
     by_season: false               # Create season subfolders within tournament
 

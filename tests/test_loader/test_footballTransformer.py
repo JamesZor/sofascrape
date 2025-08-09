@@ -19,7 +19,7 @@ logging.basicConfig(
 
 # pd.set_option("display.max_columns", None)
 # pd.set_option("display.max_rows", None)  # Show all rows if you want
-# pd.set_option("display.width", None)
+pd.set_option("display.width", 80)
 # pd.set_option("expand_frame_repr", False)
 
 
@@ -105,6 +105,6 @@ def test_basic_functionality_large():
             print(df.sample(20))
             print("- -" * 50)
 
-        # # Save sample output
-        # saved_files = transformer.save_to_csv("output/test")
-        # print(f"Saved {len(saved_files)} files")
+        # Save sample output
+        saved_files = transformer.save_to_csv("scot_champ_23_24")
+        print(f"Saved {len(saved_files)} files")

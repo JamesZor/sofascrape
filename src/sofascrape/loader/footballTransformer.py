@@ -172,14 +172,16 @@ class FootballDataTransformer:
 
     def _process_stat_value(self, value: Any) -> Any:
         """Process statistic values according to config"""
-        if value is None:
+
+        # Check for both None and NaN
+        if value is None or pd.isna(value):
             null_handling = (
                 self.config.stats_processing.value_processing.null_stat_handling
             )
             if null_handling == "zero":
                 return 0
             elif null_handling == "null":
-                return None
+                return None  # or np.nan if you prefer
             else:
                 return value
 
@@ -522,7 +524,9 @@ class FootballDataTransformer:
             return None
 
         stats = player_entry.statistics
-        minutes_played = stats.minutesPlayed if stats else 0
+        minutes_played = 0
+        if stats and stats.minutesPlayed is not None:
+            minutes_played = stats.minutesPlayed
 
         if minutes_played < player_config.min_minutes_played:
             return None
@@ -734,7 +738,7 @@ class FootballDataTransformer:
                 logger.error(error_msg)
                 self.transformation_errors.append(error_msg)
 
-    def save_to_csv(self, output_dir: Optional[str] = None) -> Dict[str, str]:
+    def save_to_csv(self, output: str) -> Dict[str, str]:
         """Save all DataFrames to CSV files
 
         Returns:
@@ -744,11 +748,7 @@ class FootballDataTransformer:
             logger.warning("No DataFrames to save. Run transform() first.")
             return {}
 
-        # Use configured output directory if not provided
-        if output_dir is None:
-            output_dir = self.config.output.directory_structure.base_dir
-
-        output_dir = Path(output_dir)
+        output_dir = Path(self.config.output.directory_structure.base_dir) / output
         output_dir.mkdir(parents=True, exist_ok=True)
 
         saved_files = {}

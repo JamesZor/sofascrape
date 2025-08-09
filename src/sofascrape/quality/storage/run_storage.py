@@ -11,6 +11,10 @@ from sofascrape.schemas import general as sofaschemas
 
 logger = logging.getLogger(__name__)
 
+# TODO: - load_most_current_consensus - check for empty
+#   File "/home/james/bet_project/sofascrape/src/sofascrape/quality/storage/run_storage.py", line 382, in load_most_current_consensus
+#   file = sorted(files, key=lambda x: int(x.split("_")[1]))[-1]
+
 
 class StorageHandler:
     """Handles saving and loading of the scraping runs and analysis.
