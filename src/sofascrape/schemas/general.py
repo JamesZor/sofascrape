@@ -596,22 +596,6 @@ class FootballLineupSchema(ConvertibleBaseModel):
 ########################################
 #### incidents
 ########################################
-# TODO:
-"""
-INFO:sofascrape.football.matchScraper:Successfully scraped STATS for match 12476986
-WARNING:sofascrape.football.incidentsComponent:Incidents validation failed for event, self.matchid =12477110, 1 validation error for FootballIncidentsSchema
-incidents.10
-  Input tag 'inGamePenalty' found using 'incidentType' does not match any of the expected tags: 'period', 'injuryTime', 'substitution', 'card', 'goal', 'varDecision' [type=union_tag_invalid, input_value={'time': 65, 'player': {'...reversedPeriodTime': 26}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.11/v/union_tag_invalid.
-ERROR:sofascrape.abstract.base:Processing failed: 1 validation error for FootballIncidentsSchema
-incidents.10
-  Input tag 'inGamePenalty' found using 'incidentType' does not match any of the expected tags: 'period', 'injuryTime', 'substitution', 'card', 'goal', 'varDecision' [type=union_tag_invalid, input_value={'time': 65, 'player': {'...reversedPeriodTime': 26}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.11/v/union_tag_invalid
-ERROR:sofascrape.football.matchScraper:Failed to scrape INCIDENTS: 1 validation error for FootballIncidentsSchema
-incidents.10
-  Input tag 'inGamePenalty' found using 'incidentType' does not match any of the expected tags: 'period', 'injuryTime', 'substitution', 'card', 'goal', 'varDecision' [type=union_tag_invalid, input_value={'time': 65, 'player': {'...reversedPeriodTime': 26}, input_type=dict]
-    For further information visit https://errors.pydantic.dev/2.11/v/union_tag_invalid for match 12477110
-"""
 
 
 class CoordinatesSchema(ConvertibleBaseModel):

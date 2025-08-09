@@ -358,7 +358,6 @@ class SeasonFootballScraper(BaseSeasonScraper):
 
         return match_list
 
-    # TODO: - Create a scrape retry method
     def scrape_retry(self, retry: Dict[str, List[str]]) -> schemas.SeasonScrapingResult:
         """runs a scrape of the season based on the matches/components that need a retry"""
         start_time = datetime.now()

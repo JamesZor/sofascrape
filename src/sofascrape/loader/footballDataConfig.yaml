@@ -1,0 +1,11 @@
+file_formats:
+  tournament: "tournament"
+  season: "season"
+  golden: "golden_data.pkl"
+
+storage:
+  base_dir: "data"
+  runs_subdir: "runs"
+  analysis_subdir: "analysis" 
+  golden_subdir: "golden"
+  logs_subdir: "logs"

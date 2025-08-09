@@ -45,13 +45,28 @@ class FootballMatchScraper(BaseMatchScraper):
     ) -> None:
         super().__init__(webdriver=webdriver, matchid=matchid, cfg=cfg)
         # TODO: Use the config setting.
-        self.available_components: List[MatchComponentType] = [
-            MatchComponentType.BASE,
-            MatchComponentType.STATS,
-            MatchComponentType.LINEUP,
-            MatchComponentType.INCIDENTS,
-            MatchComponentType.GRAPH,
-        ]
+        self.available_components: List[MatchComponentType] = (
+            self._set_available_components_from_cfg()
+        )
+        # self.available_components: List[MatchComponentType] = [
+        #     MatchComponentType.BASE,
+        #     MatchComponentType.STATS,
+        #     MatchComponentType.LINEUP,
+        #     MatchComponentType.INCIDENTS,
+        #     MatchComponentType.GRAPH,
+        # ]
+        #
+
+    def _set_available_components_from_cfg(self) -> List[MatchComponentType]:
+        available_components: List[MatchComponentType] = []
+
+        for cfg_set_component in self.cfg.scrape.match_active_components:
+            try:
+                enum_value = MatchComponentType[cfg_set_component.upper()]
+                available_components.append(enum_value)
+            except KeyError:
+                logger.warning(f"Warning: Unknown component '{cfg_set_component}'.")
+        return available_components
 
     def _create_component_error(
         self,

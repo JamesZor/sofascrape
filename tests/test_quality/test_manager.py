@@ -34,13 +34,12 @@ logging.getLogger("sofascrape.football.LineupComonent").setLevel(logging.WARNING
 logging.getLogger("sofascrape.football.base").setLevel(logging.WARNING)
 logging.getLogger("sofascrape.football.matchScraper").setLevel(logging.WARNING)
 logging.getLogger("sofascrape.football.incidentsComponent").setLevel(logging.WARNING)
+logging.getLogger("sofascrape.football.statsComponent").setLevel(logging.WARNING)
 logging.getLogger("sofascrape.football.graphComponent").setLevel(logging.WARNING)
+logging.getLogger("sofascrape.football.lineupComonent").setLevel(logging.WARNING)
 logging.getLogger("sofascrape.football.LineupComonent").setLevel(logging.WARNING)
+logging.getLogger("sofascrape.football.eventComponent").setLevel(logging.WARNING)
 logging.getLogger("sofascrape.abstract.base").setLevel(logging.WARNING)
-"""
-2025-08-08 19:00:16,937 - sofascrape.football.statsComponent - INFO - Successfully parsed stats data for event self.matchid =11395689.
-2025-08-08 19:00:16,993 - sofascrape.football.lineupComonent - INFO - Successfully parsed lineup data for event self.matchid =11395673.
-"""
 
 
 @pytest.mark.skip()
@@ -118,7 +117,7 @@ def test_scot_champ():
     season_quaility_manager.execute_scraping_run()
 
 
-# @pytest.mark.skip()
+@pytest.mark.skip()  # seaosn 23/24
 def test_comparator_scot_champ():
     print()
     print("- -" * 50)
@@ -134,3 +133,89 @@ def test_comparator_scot_champ():
     #    print(len(consensus.get_retry_dict()))
     print(" .. " * 50)
     print("golden dict ")
+
+
+def test_golden_scot_23():
+    print()
+    print("- -" * 50)
+    print("Test comparator")
+    season_quaility_manager = SeasonQualityManager(tournament_id=55, season_id=52606)
+    consensus = season_quaility_manager.storage.load_most_current_consensus()
+    golden_data_set = season_quaility_manager.build_golden_seaosn_dataset(
+        consensus.get_golden_dataset_dict()
+    )
+    season_quaility_manager.storage.save_golden_dataset(golden_data=golden_data_set)
+
+
+@pytest.mark.skip()  # seaosn 23/24
+def test_scot_champ_24():
+    """
+    name='Championship 24/25' id=62411 year='24/25'
+    name='Championship 23/24' id=52606 year='23/24'
+    name='Championship 22/23' id=41958 year='22/23'
+    name='Championship 21/22' id=37030 year='21/22'
+    name='Championship 20/21' id=29268 year='20/21'
+    name='Championship 19/20' id=23988 year='19/20'
+    name='Championship 18/19' id=17366 year='18/19'
+    name='Championship 17/18' id=13458 year='17/18'
+    name='Championship 16/17' id=11765 year='16/17'
+    """
+    season_quaility_manager = SeasonQualityManager(tournament_id=55, season_id=62411)
+    season_quaility_manager.execute_scraping_run()
+
+
+@pytest.mark.skip()  # seaosn 23/24
+def test_comparator_scot_champ_24():
+    print()
+    print("- -" * 50)
+    print("Test comparator")
+    season_quaility_manager = SeasonQualityManager(tournament_id=55, season_id=62411)
+    consensus: SeasonConsensusResult = (
+        season_quaility_manager.build_consensus_analysis()
+    )
+    # consensus = season_quaility_manager.storage.load_most_current_consensus()
+
+    print(consensus.season_summary)
+
+    print(" .. " * 50)
+    print("retry dict")
+    print(len(consensus.get_retry_dict()))
+    print(consensus.get_retry_dict())
+    # print(" .. " * 50)
+    # print("golden dict ")
+
+
+@pytest.mark.skip()  # seaosn 23/24
+def test_retry_scrape_scot_champ_24():
+    print()
+    print("- -" * 50)
+    print("Test comparator")
+    season_quaility_manager = SeasonQualityManager(tournament_id=55, season_id=62411)
+    # consensus: SeasonConsensusResult = (
+    #     season_quaility_manager.build_consensus_analysis()
+    # )
+    consensus = season_quaility_manager.storage.load_most_current_consensus()
+
+    print(consensus.season_summary)
+    print(" .. " * 50)
+    print("retry dict")
+    print(len(consensus.get_retry_dict()))
+    print(consensus.get_retry_dict())
+
+    retry = consensus.get_retry_dict()
+    season_quaility_manager.execute_scraping_retry(retry)
+    # print(" .. " * 50)
+    # print("golden dict ")
+
+
+@pytest.mark.skip()  # seaosn 23/24
+def test_golden_scot_24():
+    print()
+    print("- -" * 50)
+    print("Test comparator")
+    season_quaility_manager = SeasonQualityManager(tournament_id=55, season_id=62411)
+    consensus = season_quaility_manager.storage.load_most_current_consensus()
+    golden_data_set = season_quaility_manager.build_golden_seaosn_dataset(
+        consensus.get_golden_dataset_dict()
+    )
+    season_quaility_manager.storage.save_golden_dataset(golden_data=golden_data_set)

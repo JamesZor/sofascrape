@@ -1,0 +1,142 @@
+# Football Data Transformation Configuration
+data_extraction:
+  # Which DataFrames to create during transformation
+  include_data_types:
+    - matches
+    - match_stats
+#    - player_stats
+    - incidents
+#    - momentum
+  
+  # Which statistical periods to include in match_stats
+  stats_periods: 
+    - "ALL"
+    - "1ST" 
+    - "2ND"
+  
+  # Player data filtering rules
+  player_filters:
+    include_substitutes: true       # Include bench players in player_stats
+    min_minutes_played: 0          # Minimum playing time to include player
+    include_dnp: false             # Include "did not play" entries
+
+column_mapping:
+  # Direct field name transformations (before other rules)
+  field_mappings:
+    "homeTeam.name": "home_team"
+    "awayTeam.name": "away_team"
+    "homeScore.current": "home_score_ft"
+    "awayScore.current": "away_score_ft"
+    "homeScore.period1": "home_score_ht"
+    "awayScore.period1": "away_score_ht"
+  
+  # General naming convention rules
+  naming_rules:
+    use_snake_case: true           # Convert camelCase to snake_case
+    remove_prefixes: 
+      - "event_"                   # Remove common prefixes from column names
+    max_column_length: 50          # Truncate column names if too long
+    stat_name_source: "key"        # Use stat.key vs stat.name for column names
+  
+  # How to format team-paired data columns
+  team_data_format:
+    prefix_style: true             # "home_possession" vs "possession_home"
+    include_team_suffix: false     # Add "_home"/"_away" to all team stats
+
+stats_processing:
+  # How to pivot match statistics from long to wide format
+  pivot_settings:
+    simplify_names: true           # Use stat.key only vs "group_stat.key"
+    reorganize_pairs: true         # Group home_shots, away_shots together
+    include_period_prefix: false   # "1st_possession" vs just "possession"
+  
+  # Which stat groups to include/exclude
+  stat_groups:
+    include_groups: []             # Empty list = include all groups
+    exclude_groups: 
+      - "Disciplinary"             # Skip certain stat categories
+    rename_groups:
+      "Ball possession": "Possession"  # Shorten group names in output
+  
+  # How to process stat values
+  value_processing:
+    convert_percentages: true      # "45%" -> 45.0 (float)
+    percentage_to_decimal: false   # "45%" -> 0.45 vs 45.0
+    null_stat_handling: "zero"     # Replace None with 0, "null", or "skip"
+    invalid_value_action: "log"    # "skip", "log", "error" for bad values
+
+data_formatting:
+  # How to handle timestamps
+  datetime_processing:
+    output_format: "datetime"      # pd.datetime vs formatted string
+    timezone: "UTC"                # Convert timestamps to specific timezone
+    add_derived_time: true         # Extract hour, day_of_week as separate columns
+  
+  # Numeric data formatting
+  numeric_formatting:
+    rating_scale: "preserve"       # Keep original 0-10 scale vs normalize
+    decimal_places: 2              # Round floats to 2 decimal places
+    convert_strings: true          # "3" -> 3 (int) where possible
+  
+  # Boolean and categorical data handling
+  categorical_processing:
+    boolean_as_int: false          # True/False vs 1/0
+    null_category: "Unknown"       # Replace None in categorical columns
+  
+  # Missing value handling strategy
+  missing_values:
+    strategy: "preserve"           # "preserve", "fill_zero", "fill_mean"
+    create_missing_flags: false    # Add "is_missing_column" indicators
+
+output:
+  # File naming patterns
+  file_naming:
+    pattern: "{prefix}_{tournament}_{datatype}.csv"  # Template string
+    prefix: "football_data"                          # Base filename
+    include_timestamp: false                         # Add "_20240101_120000"
+    tournament_mapping:                              # Custom tournament names
+      54: "premier_league"
+      23: "championship"
+      55: "scottish_premier"
+  
+  # CSV export settings
+  csv_options:
+    separator: ","                 # Field delimiter
+    encoding: "utf-8"              # File encoding
+    index: false                   # Don't write row numbers
+    date_format: "%Y-%m-%d"        # How dates appear in CSV
+    na_rep: ""                     # How None/NaN values appear
+  
+  # Directory organization
+  directory_structure:
+    base_dir: "output"             # Root output folder
+    by_tournament: true            # Create tournament subfolders
+    by_season: false               # Create season subfolders within tournament
+
+data_quality:
+  # Pre-transformation validation
+  input_validation:
+    require_match_ids: true        # Error if match_id missing
+    check_score_consistency: true  # Warn if home_score + away_score inconsistent
+    validate_timestamps: true      # Error if invalid dates
+  
+  # Post-transformation checks
+  output_validation:
+    min_rows_per_dataframe: 1      # Error if DataFrame empty
+    max_null_percentage: 50        # Warn if >50% nulls in any column
+    required_columns:              # Error if these columns missing
+      matches: 
+        - "match_id"
+        - "home_team" 
+        - "away_team"
+      match_stats:
+        - "match_id"
+      player_stats:
+        - "match_id"
+        - "player_id"
+  
+  # Error handling behavior
+  error_handling:
+    on_validation_error: "warn"    # "error", "warn", "skip"
+    log_skipped_matches: true      # Log which matches were skipped
+    continue_on_error: true        # Process other matches if one fails
