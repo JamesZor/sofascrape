@@ -44,6 +44,7 @@ class FootballMatchScraper(BaseMatchScraper):
         self, webdriver: MyWebDriver, matchid: int, cfg: Optional[DictConfig] = None
     ) -> None:
         super().__init__(webdriver=webdriver, matchid=matchid, cfg=cfg)
+        # TODO: Use the config setting.
         self.available_components: List[MatchComponentType] = [
             MatchComponentType.BASE,
             MatchComponentType.STATS,

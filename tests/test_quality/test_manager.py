@@ -101,7 +101,7 @@ def test_retry_scrape():
     season_quaility_manager.execute_scraping_retry(retry)
 
 
-# @pytest.mark.skip()
+@pytest.mark.skip()
 def test_scot_champ():
     """
     name='Championship 24/25' id=62411 year='24/25'
@@ -118,7 +118,7 @@ def test_scot_champ():
     season_quaility_manager.execute_scraping_run()
 
 
-@pytest.mark.skip()
+# @pytest.mark.skip()
 def test_comparator_scot_champ():
     print()
     print("- -" * 50)

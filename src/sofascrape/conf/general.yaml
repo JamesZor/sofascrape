@@ -4,6 +4,13 @@
 defaults:
   - links: general 
 
+# HACK: - extend this 
+scrape:
+  match_active_components: ["base", "stats", "lineup", "incidents"] 
+  # active_components: ["base", "stats", "lineup", "incidents", "graph"]
+
+
+
 
 # Details 
 details:
