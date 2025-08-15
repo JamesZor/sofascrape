@@ -227,8 +227,8 @@ if __name__ == "__main__":
     # loop_over_tournament_and_seasons_check(data)
     # build_golden(sub_set)
 
-    processing(ava)  # {54: {62408, 52588, 41957, 37029}, 55: {62411, 52606}}
+    # processing(ava)  # {54: {62408, 52588, 41957, 37029}, 55: {62411, 52606}}
 
-    # run_two_scrapes(54, season_id=62408)
+    run_two_scrapes(54, season_id=28212)
 
     # get_seaons_ids(54)

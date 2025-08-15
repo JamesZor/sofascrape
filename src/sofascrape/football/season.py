@@ -159,6 +159,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
             scraping_duration=duration,
         )
 
+    # TODO: max_workers needs to be added to the config
     def process_events_threaded(
         self, max_workers: int = 10
     ) -> schemas.SeasonScrapingResult:
