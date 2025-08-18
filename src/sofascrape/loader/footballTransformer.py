@@ -219,6 +219,7 @@ class FootballDataTransformer:
 
         return value
 
+    # TODO: add more config items here
     def _create_matches_df(self, loaded_data: Dict) -> pd.DataFrame:
         """Create matches DataFrame with basic match information"""
         matches_data = []
@@ -236,23 +237,24 @@ class FootballDataTransformer:
                             # Identifiers
                             "tournament_id": tournament_id,
                             "season_id": season_id,
+                            "season": event.season.year if event.season else None,
                             "match_id": match_id,
                             "tournament_slug": (
                                 event.tournament.slug if event.tournament else None
                             ),
                             # Teams
                             "home_team": (
-                                event.homeTeam.name if event.homeTeam else None
-                            ),
-                            "home_team_slug": (
                                 event.homeTeam.slug if event.homeTeam else None
                             ),
+                            # "home_team_slug": (
+                            #     event.homeTeam.slug if event.homeTeam else None
+                            # ),
                             "away_team": (
-                                event.awayTeam.name if event.awayTeam else None
-                            ),
-                            "away_team_slug": (
                                 event.awayTeam.slug if event.awayTeam else None
                             ),
+                            # "away_team_slug": (
+                            #     event.awayTeam.slug if event.awayTeam else None
+                            # ),
                             # Scores
                             "home_score": (
                                 event.homeScore.current if event.homeScore else None
@@ -269,17 +271,17 @@ class FootballDataTransformer:
                             # Match info
                             "match_date": self._format_datetime(event.startTimestamp),
                             "round": event.roundInfo.round if event.roundInfo else None,
-                            "status": (
-                                event.status.description if event.status else None
-                            ),
+                            # "status": (
+                            #     event.status.description if event.status else None
+                            # ),
                             "winner_code": (
                                 event.winnerCode
                                 if hasattr(event, "winnerCode")
                                 else None
                             ),
                             # Venue
-                            "venue": event.venue.name if event.venue else None,
-                            "attendance": getattr(event, "attendance", None),
+                            # "venue": event.venue.name if event.venue else None,
+                            # "attendance": getattr(event, "attendance", None),
                             # Features
                             "has_xg": getattr(event, "hasXg", False),
                             "has_stats": getattr(

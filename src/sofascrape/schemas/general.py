@@ -134,7 +134,7 @@ class TimeFootballSchema(ConvertibleBaseModel):
 
     injuryTime1: int = 0
     injuryTime2: int = 0
-    currentPeriodStartTimestamp: int
+    currentPeriodStartTimestamp: Optional[int] = None
 
 
 class ScoreFootballSchema(ConvertibleBaseModel):
@@ -184,6 +184,7 @@ class RoundInfoSchema(ConvertibleBaseModel):
     round: int
 
 
+# TODO: sort this out, optional for all
 class StatusSchema(ConvertibleBaseModel):
     code: int
     description: str
@@ -193,18 +194,18 @@ class StatusSchema(ConvertibleBaseModel):
 class EventSchema(ConvertibleBaseModel):
     slug: str
     id: int
-    startTimestamp: int
+    startTimestamp: Optional[int] = None
     status: StatusSchema
 
-    time: Optional[TimeFootballSchema]
+    time: Optional[TimeFootballSchema] = None
 
     tournament: TournamentSchema
     season: SeasonSchema
     roundInfo: RoundInfoSchema
 
-    winnerCode: Optional[int]
-    homeScore: Optional[ScoreFootballSchema]
-    awayScore: Optional[ScoreFootballSchema]
+    winnerCode: Optional[int] = None
+    homeScore: Optional[ScoreFootballSchema] = None
+    awayScore: Optional[ScoreFootballSchema] = None
 
     homeTeam: TeamSchema
     awayTeam: TeamSchema
@@ -653,8 +654,8 @@ class SubstitutionIncidentSchema(ConvertibleBaseModel):
     """Substitution incidents"""
 
     incidentType: Literal["substitution"] = "substitution"  # Use Literal instead of str
-    playerIn: LineupPlayerSchema  # Reuse from lineup schemas
-    playerOut: LineupPlayerSchema  # Reuse from lineup schemas
+    playerIn: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
+    playerOut: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
     id: int
     time: int
     addedTime: Optional[int] = None
@@ -716,9 +717,9 @@ class GoalIncidentSchema(ConvertibleBaseModel):
     """Goal incidents"""
 
     incidentType: Literal["goal"] = "goal"  # Use Literal instead of str
-    homeScore: Optional[int]
-    awayScore: Optional[int]
-    player: LineupPlayerSchema  # Reuse from lineup schemas
+    homeScore: Optional[int] = None
+    awayScore: Optional[int] = None
+    player: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
     assist1: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
     assist2: Optional[LineupPlayerSchema] = None  # Reuse from lineup schemas
     footballPassingNetworkAction: Optional[List[PassingNetworkActionSchema]] = None

@@ -161,7 +161,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
 
     # TODO: max_workers needs to be added to the config
     def process_events_threaded(
-        self, max_workers: int = 10
+        self, max_workers: int = 5
     ) -> schemas.SeasonScrapingResult:
         """Process events using threading (faster but more resource intensive)"""
         start_time = datetime.now()

@@ -6,7 +6,8 @@ defaults:
 
 # HACK: - extend this 
 scrape:
-  match_active_components: ["base", "stats", "lineup", "incidents"] 
+#  match_active_components: ["base", "stats", "lineup", "incidents"] 
+  match_active_components: ["base", "lineup", "incidents"] 
   # active_components: ["base", "stats", "lineup", "incidents", "graph"]
 
 

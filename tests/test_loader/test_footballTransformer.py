@@ -23,7 +23,7 @@ pd.set_option("display.width", 80)
 # pd.set_option("expand_frame_repr", False)
 
 
-@pytest.mark.skip()
+# @pytest.mark.skip()
 def test_basic_functionality():
     """Test the basic loading and transformation workflow"""
 
@@ -67,6 +67,7 @@ def test_basic_functionality():
         # print(f"Saved {len(saved_files)} files")
 
 
+@pytest.mark.skip()
 def test_basic_functionality_large():
     """Test the basic loading and transformation workflow"""
 
