@@ -1,9 +1,8 @@
 import logging
-import os
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional
 
 import pandas as pd
 from omegaconf import DictConfig, OmegaConf
@@ -11,6 +10,130 @@ from omegaconf import DictConfig, OmegaConf
 import sofascrape.schemas.general as sofaschema
 
 logger = logging.getLogger(__name__)
+
+
+##################################################
+# Incident type extractors
+##################################################
+
+
+def incident_type_goals_extractor(
+    current_dict: Dict, incident: sofaschema.GoalIncidentSchema
+) -> None:
+    """In place update for the goal type incident"""
+    current_dict.update(
+        {
+            "player_name": incident.player.name if incident.player else None,
+            "assist1_name": incident.assist1.name if incident.assist1 else None,
+            "assist2_name": incident.assist2.name if incident.assist2 else None,
+            "home_score": incident.homeScore,
+            "away_score": incident.awayScore,
+            "incident_class": incident.incidentClass,
+        }
+    )
+
+
+def incident_type_card_extractor(
+    current_dict: Dict, incident: sofaschema.CardIncidentSchema
+) -> None:
+    """In place update for the card type incident"""
+    current_dict.update(
+        {
+            "player_name": incident.player.name if incident.player else None,
+            "card_type": incident.incidentClass,
+            "reason": incident.reason,
+            "rescinded": incident.rescinded,
+        }
+    )
+
+
+def incident_type_substitution_extractor(
+    current_dict: Dict, incident: sofaschema.SubstitutionIncidentSchema
+) -> None:
+    """In place update for the substitution type incident"""
+    current_dict.update(
+        {
+            "player_in_name": incident.playerIn.name if incident.playerIn else None,
+            "player_out_name": incident.playerOut.name if incident.playerOut else None,
+            "is_injury": incident.injury,
+            "incident_class": incident.incidentClass,
+        }
+    )
+
+
+def incident_type_period_extractor(
+    current_dict: Dict, incident: sofaschema.PeriodIncidentSchema
+) -> None:
+    """In place update for the period type incident (HT, FT)"""
+    current_dict.update(
+        {
+            "period_text": incident.text,
+            "home_score": incident.homeScore,
+            "away_score": incident.awayScore,
+            "is_live": incident.isLive,
+            "added_time": incident.addedTime,
+            "time_seconds": incident.timeSeconds,
+            "reversed_period_time": incident.reversedPeriodTime,
+            "reversed_period_time_seconds": incident.reversedPeriodTimeSeconds,
+            "period_time_seconds": incident.periodTimeSeconds,
+        }
+    )
+
+
+def incident_type_injury_time_extractor(
+    current_dict: Dict, incident: sofaschema.InjuryTimeIncidentSchema
+) -> None:
+    """In place update for the injury time type incident"""
+    current_dict.update(
+        {
+            "injury_time_length": incident.length,
+            "added_time": incident.addedTime,
+            "reversed_period_time": incident.reversedPeriodTime,
+        }
+    )
+
+
+def incident_type_var_decision_extractor(
+    current_dict: Dict, incident: sofaschema.VarDecisionIncidentSchema
+) -> None:
+    """In place update for the VAR decision type incident"""
+    current_dict.update(
+        {
+            "var_confirmed": incident.confirmed,
+            "player_name": incident.player.name if incident.player else None,
+            "var_decision": incident.decision,
+            "var_reason": incident.reason,
+            "incident_class": incident.incidentClass,
+            "reversed_period_time": incident.reversedPeriodTime,
+        }
+    )
+
+
+def incident_type_in_game_penalty_extractor(
+    current_dict: Dict, incident: sofaschema.InGamePenaltySchema
+) -> None:
+    """In place update for the in-game penalty type incident"""
+    current_dict.update(
+        {
+            "player_name": incident.player.name if incident.player else None,
+            "penalty_reason": incident.reason,
+            "rescinded": incident.rescinded,
+            "incident_class": incident.incidentClass,
+            "reversed_period_time": incident.reversedPeriodTime,
+        }
+    )
+
+
+# Strategy mapping - this is the key to your pattern
+INCIDENT_EXTRACTORS: Dict[str, Callable[[Dict, Any], None]] = {
+    "goal": incident_type_goals_extractor,
+    "card": incident_type_card_extractor,
+    "substitution": incident_type_substitution_extractor,
+    "period": incident_type_period_extractor,
+    "injuryTime": incident_type_injury_time_extractor,
+    "varDecision": incident_type_var_decision_extractor,
+    "inGamePenalty": incident_type_in_game_penalty_extractor,
+}
 
 
 class FootballDataTransformer:
@@ -590,6 +713,7 @@ class FootballDataTransformer:
                             continue
 
                         for incident in match_data.incidents.incidents:
+                            # Base incident dictionary with common fields
                             incident_dict = {
                                 "tournament_id": tournament_id,
                                 "season_id": season_id,
@@ -599,58 +723,15 @@ class FootballDataTransformer:
                                 "is_home": getattr(incident, "isHome", None),
                             }
 
-                            # Add type-specific fields
-                            if incident.incidentType == "goal":
-                                incident_dict.update(
-                                    {
-                                        "player_name": (
-                                            incident.player.name
-                                            if incident.player
-                                            else None
-                                        ),
-                                        "assist1_name": (
-                                            incident.assist1.name
-                                            if getattr(incident, "assist1", None)
-                                            else None
-                                        ),
-                                        "home_score": getattr(
-                                            incident, "homeScore", None
-                                        ),
-                                        "away_score": getattr(
-                                            incident, "awayScore", None
-                                        ),
-                                    }
+                            # Apply type-specific extraction using strategy pattern
+                            extractor = INCIDENT_EXTRACTORS.get(incident.incidentType)
+                            if extractor:
+                                extractor(incident_dict, incident)
+                            else:
+                                # Log unknown incident types for future implementation
+                                logger.warning(
+                                    f"Warning: Unknown incident type '{incident.incidentType}' encountered"
                                 )
-                            elif incident.incidentType == "card":
-                                incident_dict.update(
-                                    {
-                                        "player_name": (
-                                            incident.player.name
-                                            if incident.player
-                                            else None
-                                        ),
-                                        "card_type": getattr(
-                                            incident, "incidentClass", None
-                                        ),
-                                    }
-                                )
-                            elif incident.incidentType == "substitution":
-                                incident_dict.update(
-                                    {
-                                        "player_in": (
-                                            incident.playerIn.name
-                                            if getattr(incident, "playerIn", None)
-                                            else None
-                                        ),
-                                        "player_out": (
-                                            incident.playerOut.name
-                                            if getattr(incident, "playerOut", None)
-                                            else None
-                                        ),
-                                        "is_injury": getattr(incident, "injury", False),
-                                    }
-                                )
-
                             # Apply column name mapping
                             incident_dict = {
                                 self._apply_column_mapping(k): v

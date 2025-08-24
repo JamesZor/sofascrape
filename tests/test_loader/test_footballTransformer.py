@@ -56,6 +56,8 @@ def test_basic_functionality():
         print(f"Created {len(dataframes)} DataFrames")
         print(f"Names df {dataframes.keys()}.")
 
+        dataframes["incidents"]
+
         for name, df in dataframes.items():
             print(f"  {name}: {len(df)} rows")
 
