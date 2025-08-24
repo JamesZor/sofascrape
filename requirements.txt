@@ -1,0 +1,6 @@
+pydantic
+omegaconf
+hydra-core
+pandas
+tqdm
+# webdriver  # Custom module - handle separately
