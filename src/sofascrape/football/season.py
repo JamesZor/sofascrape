@@ -1,5 +1,6 @@
 import logging
 import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -269,6 +270,7 @@ class SeasonFootballScraper(BaseSeasonScraper):
             try:
                 result = self._scrape_single_match(matchid, driver)
                 results.append(result)
+                time.sleep(self.cfg.scrape.wait_time_after_single_scrape)
 
                 # Thread-safe progress update
                 with progress_lock:
@@ -308,8 +310,13 @@ class SeasonFootballScraper(BaseSeasonScraper):
 
         return results
 
-    def scrape(self, use_threading: bool = True, max_workers: int = 5) -> None:
+    def scrape(
+        self, use_threading: bool = True, max_workers: Optional[int] = None
+    ) -> None:
         """Main scraping method"""
+        if max_workers is None:
+            max_workers = self.cfg.scrape.max_workers
+
         self._get_events()
         if use_threading:
             self.data: schemas.SeasonScrapingResult = self.process_events_threaded(
