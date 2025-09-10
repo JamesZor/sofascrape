@@ -42,10 +42,11 @@ logging.getLogger("sofascrape.abstract.base").setLevel(logging.WARNING)
 """
 scot_prem_id = 54
 scot_champ_id = 55 
-scot_league_cup_ = 332
+scot_league_cup_ = 73
 """
 
 """
+25/26 = 77037
 name='Championship 24/25' id=62411 year='24/25' - yes f:2
 name='Championship 23/24' id=52606 year='23/24' - yes
 name='Championship 22/23' id=41958 year='22/23' - yes # no stats 
@@ -68,6 +69,20 @@ name='Premiership 18/19' id=17364 year='18/19'
 name='Premiership 17/18' id=13448 year='17/18'
 name='Premiership 16/17' id=11743 year='16/17'
 """
+
+"""
+name='Scottish Cup 25/26' id=81893 year='25/26'
+name='Scottish Cup 24/25' id=66406 year='24/25'
+name='Scottish Cup 23/24' id=54956 year='23/24'
+name='Scottish Cup 2023' id=45645 year='2023'
+name='Scottish Cup 21/22' id=38476 year='21/22'
+name='Scottish Cup 20/21' id=35062 year='20/21'
+name='Scottish Cup 19/20' id=25430 year='19/20'
+name='Scottish Cup 18/19' id=18966 year='18/19'
+name='Scottish Cup 17/18' id=14682 year='17/18'
+name='Scottish Cup 16/17' id=12319 year='16/17'
+"""
+
 
 data = {
     54: [
@@ -117,6 +132,15 @@ def run_two_scrapes(tournament_id: int, season_id: int):
     consensus: SeasonConsensusResult = (
         season_quaility_manager.build_consensus_analysis()
     )
+    print(consensus.season_summary)
+
+
+def run_one_scrape(tournament_id: int, season_id: int):
+    season_quaility_manager = SeasonQualityManager(
+        tournament_id=tournament_id, season_id=season_id
+    )
+    season_quaility_manager.execute_scraping_run()
+    consensus = season_quaility_manager.build_consensus_analysis()
     print(consensus.season_summary)
 
 
@@ -172,6 +196,20 @@ def loop_over_tournament_and_seasons(data_dict):
         [_run_two_scrapes(tour_id, season_id) for season_id in season_list]
 
 
+def repair(tournament_id: int, season_id: int):
+    season_quaility_manager = SeasonQualityManager(
+        tournament_id=tournament_id, season_id=season_id
+    )
+    consensus = season_quaility_manager.storage.load_most_current_consensus()
+    season_quaility_manager.execute_scraping_retry(consensus.get_retry_dict())
+
+
+def loop_over_tournament_and_seasons_repair(data_dict):
+    for tour_id, season_list in data_dict.items():
+        print(f"tour_id: {tour_id}")
+        [repair(tour_id, season_id) for season_id in season_list]
+
+
 def loop_over_tournament_and_seasons_check(data_dict):
     for tour_id, season_list in data_dict.items():
         for season_id in season_list:
@@ -180,6 +218,14 @@ def loop_over_tournament_and_seasons_check(data_dict):
             )
             consensus = season_quaility_manager.storage.load_most_current_consensus()
             print(f"t {tour_id} | s {season_id} : {consensus.season_summary}.")
+
+
+def loop_over_tournament_and_seasons_new_consensus(data_dict):
+    for tour_id, season_list in data_dict.items():
+        for season_id in season_list:
+            season_quaility_manager = SeasonQualityManager(tour_id, season_id)
+            consensus = season_quaility_manager.build_consensus_analysis()
+            print(consensus.season_summary)
 
 
 """
@@ -227,7 +273,7 @@ def build_golden(subdata):
             )
 
 
-def processing(data):
+def processing(data, out_dir):
     manager = FootballDataManager()
 
     # available = manager.loader.discover_available_data()
@@ -239,7 +285,7 @@ def processing(data):
 
     manager.process_tournament_seasons(
         tournament_seasons=data,
-        output_dir="scot_nostats",
+        output_dir=out_dir,
     )
 
 
@@ -314,7 +360,7 @@ def whats_going_on_scot_20_to_24(data):
 
 
 if __name__ == "__main__":
-    whats_going_on_scot_20_to_24(no_stats)
+    #    whats_going_on_scot_20_to_24(no_stats)
 
     # loop_over_tournament_and_seasons(data)
     # loop_over_tournament_and_seasons_check(check_data)
@@ -330,5 +376,56 @@ if __name__ == "__main__":
     # used to get the data into the output folder
     # processing(no_stats)
 
+    """
+    running for some season 25/26
+    """
+    #  run_two_scrapes(54, 77128)
+    #    run_two_scrapes(55, 77037)
+    """missing a game 
+    """
+    #    rerun_and_consensus(54, 77128)
 
-# get_seaons_ids(54)
+    no_stats_20_25 = {
+        54: {
+            77128,
+            62408,
+            52588,
+            41957,
+            37029,
+            28212,
+        },  # Premiership
+        55: {
+            77037,
+            62411,
+            52606,
+            41958,
+            37030,
+            29268,
+        },  # Championship
+    }
+    # loop_over_tournament_and_seasons_repair(no_stats_20_25)
+    # loop_over_tournament_and_seasons_check(no_stats_20_25)
+    # loop_over_tournament_and_seasons_new_consensus(no_stats_20_25)
+    # build_golden(no_stats_20_25)
+    # processing(no_stats_20_25, "scot_20_25_f")
+
+    """
+t 54 | s 28212 : {'total_matches': 198, 'analyzable_matches': 198, 'single_run_matches': 0, 'perfect_consensus': 198, 'consensus_with_outliers': 0, 'consensus_total': 198, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 1.0}.
+t 54 | s 41957 : {'total_matches': 198, 'analyzable_matches': 198, 'single_run_matches': 0, 'perfect_consensus': 198, 'consensus_with_outliers': 0, 'consensus_total': 198, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 1.0}.
+t 54 | s 37029 : {'total_matches': 198, 'analyzable_matches': 198, 'single_run_matches': 0, 'perfect_consensus': 198, 'consensus_with_outliers': 0, 'consensus_total': 198, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 1.0}.
+t 54 | s 62408 : {'total_matches': 198, 'analyzable_matches': 198, 'single_run_matches': 0, 'perfect_consensus': 195, 'consensus_with_outliers': 0, 'consensus_total': 195, 'failed_matches': 3, 'consensus_rate': 0.9848484848484849, 'perfect_rate': 0.9848484848484849}.
+t 54 | s 77128 : {'total_matches': 18, 'analyzable_matches': 18, 'single_run_matches': 0, 'perfect_consensus': 17, 'consensus_with_outliers': 1, 'consensus_total': 18, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 0.9444444444444444}.
+t 54 | s 52588 : {'total_matches': 198, 'analyzable_matches': 198, 'single_run_matches': 0, 'perfect_consensus': 198, 'consensus_with_outliers': 0, 'consensus_total': 198, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 1.0}.
+t 55 | s 29268 : {'total_matches': 135, 'analyzable_matches': 134, 'single_run_matches': 1, 'perfect_consensus': 134, 'consensus_with_outliers': 0, 'consensus_total': 134, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 1.0}.
+t 55 | s 37030 : {'total_matches': 180, 'analyzable_matches': 180, 'single_run_matches': 0, 'perfect_consensus': 176, 'consensus_with_outliers': 4, 'consensus_total': 180, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 0.9777777777777777}.
+t 55 | s 41958 : {'total_matches': 180, 'analyzable_matches': 180, 'single_run_matches': 0, 'perfect_consensus': 177, 'consensus_with_outliers': 3, 'consensus_total': 180, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 0.9833333333333333}.
+t 55 | s 62411 : {'total_matches': 180, 'analyzable_matches': 180, 'single_run_matches': 0, 'perfect_consensus': 177, 'consensus_with_outliers': 1, 'consensus_total': 178, 'failed_matches': 2, 'consensus_rate': 0.9888888888888889, 'perfect_rate': 0.9833333333333333}.
+t 55 | s 77037 : {'total_matches': 20, 'analyzable_matches': 20, 'single_run_matches': 0, 'perfect_consensus': 20, 'consensus_with_outliers': 0, 'consensus_total': 20, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 1.0}.
+t 55 | s 52606 : {'total_matches': 180, 'analyzable_matches': 180, 'single_run_matches': 0, 'perfect_consensus': 113, 'consensus_with_outliers': 67, 'consensus_total': 180, 'failed_matches': 0, 'consensus_rate': 1.0, 'perfect_rate': 0.6277777777777778}.
+    """
+
+    # scotland cup
+    # get_seaons_ids(73)
+    scot_cup = {73: {81893, 66406, 54956}}
+
+    loop_over_tournament_and_seasons(scot_cup)

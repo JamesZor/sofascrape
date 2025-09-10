@@ -181,7 +181,7 @@ class TeamSchema(ConvertibleBaseModel):
 
 
 class RoundInfoSchema(ConvertibleBaseModel):
-    round: int
+    round: Optional[int] = None
 
 
 # TODO: sort this out, optional for all
@@ -201,7 +201,7 @@ class EventSchema(ConvertibleBaseModel):
 
     tournament: TournamentSchema
     season: SeasonSchema
-    roundInfo: RoundInfoSchema
+    roundInfo: Optional[RoundInfoSchema] = None
 
     winnerCode: Optional[int] = None
     homeScore: Optional[ScoreFootballSchema] = None
