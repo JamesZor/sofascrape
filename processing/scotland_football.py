@@ -70,20 +70,6 @@ name='Premiership 17/18' id=13448 year='17/18'
 name='Premiership 16/17' id=11743 year='16/17'
 """
 
-"""
-name='Scottish Cup 25/26' id=81893 year='25/26'
-name='Scottish Cup 24/25' id=66406 year='24/25'
-name='Scottish Cup 23/24' id=54956 year='23/24'
-name='Scottish Cup 2023' id=45645 year='2023'
-name='Scottish Cup 21/22' id=38476 year='21/22'
-name='Scottish Cup 20/21' id=35062 year='20/21'
-name='Scottish Cup 19/20' id=25430 year='19/20'
-name='Scottish Cup 18/19' id=18966 year='18/19'
-name='Scottish Cup 17/18' id=14682 year='17/18'
-name='Scottish Cup 16/17' id=12319 year='16/17'
-"""
-
-
 data = {
     54: [
         # 62408,
