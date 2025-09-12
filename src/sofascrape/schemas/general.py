@@ -181,7 +181,7 @@ class TeamSchema(ConvertibleBaseModel):
 
 
 class RoundInfoSchema(ConvertibleBaseModel):
-    round: int
+    round: Optional[int] = None
 
 
 # TODO: sort this out, optional for all

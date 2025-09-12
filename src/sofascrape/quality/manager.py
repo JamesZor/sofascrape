@@ -49,7 +49,7 @@ class SeasonQualityManager:
         # TODO: Change to full once working and tested.
         # season_scraper._scrape_debug(use_threading=True, max_workers=3)
         # HACK: max works as config
-        season_scraper.scrape(use_threading=True, max_workers=10)
+        season_scraper.scrape(use_threading=True)
 
         self.storage.save_scraping_run(season_scraper.data)
 
