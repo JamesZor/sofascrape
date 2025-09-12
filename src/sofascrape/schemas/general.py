@@ -199,8 +199,8 @@ class EventSchema(ConvertibleBaseModel):
 
     time: Optional[TimeFootballSchema] = None
 
-    tournament: TournamentSchema
-    season: SeasonSchema
+    tournament: Optional[TournamentSchema] = None
+    season: Optional[SeasonSchema] = None
     roundInfo: RoundInfoSchema
 
     winnerCode: Optional[int] = None
