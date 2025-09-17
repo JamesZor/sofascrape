@@ -46,7 +46,7 @@ process_settings:
     - 77351 # England - League Two
     - 77128 # Scotland - Premiership
     - 77037 # Scotland - Championship
-
+    - 81893 # Scotland - cup 25/26
   # The final destination for the processed CSV files.
   output_directory: "uk_football_data_20_26"
 
@@ -85,13 +85,13 @@ data_scope:
       - 52368 # 23/24
       - 61960 # 24/25
       - 77351 # 25/26 
-    # FA Cup 
-    16:
-        - 34650 # 20/21 
-        - 39384 # 21/22 
-        - 41913 # 22/23 
-        - 55978 # 23/24 
-        - 67958 # 24/25 
+    # # FA Cup 
+    # 16:
+    #     - 34650 # 20/21 
+    #     - 39384 # 21/22 
+    #     - 41913 # 22/23 
+    #     - 55978 # 23/24 
+    #     - 67958 # 24/25 
 
   scotland:
     # Premiership
@@ -109,4 +109,13 @@ data_scope:
       - 41958 # 22/23
       - 52606 # 23/24
       - 62411 # 24/25
-      - 77037 # 25/26
+      - 77037 # 25/26 
+    # Scottish Cup 
+    73:
+      - 81893 # 25/26
+      - 66406 # 24/25
+      - 54956 # 23/24
+      - 45645 # 2023
+      - 38476 # 21/22
+      - 35062 # 20/21
+
