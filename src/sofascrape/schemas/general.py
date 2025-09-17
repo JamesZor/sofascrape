@@ -589,9 +589,9 @@ class TeamLineupSchema(ConvertibleBaseModel):
 class FootballLineupSchema(ConvertibleBaseModel):
     """Complete football lineup data"""
 
-    confirmed: bool
-    home: TeamLineupSchema
-    away: TeamLineupSchema
+    confirmed: Optional[bool] = None
+    home: Optional[TeamLineupSchema] = None
+    away: Optional[TeamLineupSchema] = None
 
 
 ########################################
