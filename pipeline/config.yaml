@@ -4,6 +4,38 @@
 # This file defines the scope of data to be processed.
 # Add or remove tournament/season IDs here to control the pipeline.
 
+# name='Scottish Cup 25/26' id=81893 year='25/26'
+# name='Scottish Cup 24/25' id=66406 year='24/25'
+# name='Scottish Cup 23/24' id=54956 year='23/24'
+# name='Scottish Cup 2023' id=45645 year='2023'
+# name='Scottish Cup 21/22' id=38476 year='21/22'
+# name='Scottish Cup 20/21' id=35062 year='20/21'
+# name='Scottish Cup 19/20' id=25430 year='19/20'
+# name='Scottish Cup 18/19' id=18966 year='18/19'
+# name='Scottish Cup 17/18' id=14682 year='17/18'
+# name='Scottish Cup 16/17' id=12319 year='16/17'
+# name='FA Cup 24/25' id=67958 year='24/25'
+# name='FA Cup 23/24' id=55978 year='23/24'
+# name='FA Cup 22/23' id=41913 year='22/23'
+# name='FA Cup 21/22' id=39384 year='21/22'
+# name='FA Cup 20/21' id=34650 year='20/21'
+# name='FA Cup 19/20' id=25944 year='19/20'
+# name='FA Cup 18/19' id=19402 year='18/19'
+# name='FA Cup 17/18' id=15100 year='17/18'
+# name='FA Cup 16/17' id=12550 year='16/17'
+# name='FA Cup 15/16' id=11016 year='15/16'
+# name='EFL Cup 25/26' id=77500 year='25/26'
+# name='EFL Cup 24/25' id=62483 year='24/25'
+# name='EFL Cup 23/24' id=52393 year='23/24'
+# name='EFL Cup 22/23' id=42443 year='22/23'
+# name='EFL Cup 21/22' id=37177 year='21/22'
+# name='EFL Cup 20/21' id=29404 year='20/21'
+# name='EFL Cup 19/20' id=24004 year='19/20'
+# name='EFL Cup 18/19' id=17400 year='18/19'
+# name='EFL Cup 17/18' id=13389 year='17/18'
+# name='EFL Cup 16/17' id=11794 year='16/17'
+
+
 process_settings:
   # Seasons that are currently in-progress and require scraping and updates.
   # These are the season IDs for the 25/26 season.
@@ -52,7 +84,14 @@ data_scope:
       - 42403 # 22/23
       - 52368 # 23/24
       - 61960 # 24/25
-      - 77351 # 25/26
+      - 77351 # 25/26 
+    # FA Cup 
+    16:
+        - 34650 # 20/21 
+        - 39384 # 21/22 
+        - 41913 # 22/23 
+        - 55978 # 23/24 
+        - 67958 # 24/25 
 
   scotland:
     # Premiership

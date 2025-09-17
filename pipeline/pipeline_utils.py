@@ -1,5 +1,6 @@
 import logging
 import time
+from pathlib import Path
 from typing import Dict, Set
 
 from sofascrape.loader.footballDataManager import FootballDataManager
@@ -8,6 +9,9 @@ from sofascrape.loader.footballDataManager import FootballDataManager
 from sofascrape.quality.manager import SeasonQualityManager
 
 logger = logging.getLogger(__name__)
+
+# HACK: - add to config
+BASE_DIR: str = "/home/james/bet_project/sofascrape/"
 
 
 def run_initial_scrapes(tournament_id: int, season_id: int, num_runs: int = 2):
@@ -137,3 +141,21 @@ def check_consensus_status(tournament_id: int, season_id: int):
         logger.error(
             f"Could not check consensus for t:{tournament_id} s:{season_id}. Error: {e}"
         )
+
+
+def data_exists_for_season(tournament_id: int, season_id: int) -> bool:
+    """
+    Checks if a data directory already exists for a given tournament and season.
+
+    Args:
+        tournament_id: The ID of the tournament.
+        season_id: The ID of the season.
+        base_data_dir: The root directory for all data storage.
+
+    Returns:
+        True if the directory exists, False otherwise.
+    """
+    base_data_dir = Path(BASE_DIR) / "data/"
+
+    season_path = base_data_dir / f"tournament_{tournament_id}" / f"season_{season_id}"
+    return season_path.exists()

@@ -1,5 +1,6 @@
 import argparse
 import logging
+from pathlib import Path
 from typing import Any, Dict
 
 # Import the reusable logic from our new utils file
@@ -54,6 +55,7 @@ def main():
             "export",
             "run-all",
             "check-consensus",
+            "scrape-all",
         ],  # Add "check-consensus" here
         help="""The pipeline stage to execute:
   - update:          Scrape and repair only the 'live_seasons' defined in config.
@@ -61,6 +63,7 @@ def main():
   - export:          Process ALL golden datasets into final CSV files.
   - run-all:         Execute the entire pipeline: update -> build-golden -> export.
   - check-consensus: Print the summary of the latest consensus for ALL seasons.
+  - scrape-all:      Scrape ALL seasons in config that don't already have data.
 """,
     )
 
@@ -113,6 +116,26 @@ def main():
         for tour_id, season_list in all_seasons.items():
             for season_id in season_list:
                 utils.check_consensus_status(tour_id, season_id)
+        print("✅ Stage Complete.")
+
+    elif args.command == "scrape-all":
+        print("\n🔎 Starting Stage: Scrape All Missing Seasons...")
+        all_seasons = get_all_seasons_from_scope(data_scope)
+
+        for tour_id, season_list in all_seasons.items():
+            for season_id in season_list:
+                if utils.data_exists_for_season(tour_id, season_id):
+                    print(
+                        f"  Skipping t:{tour_id} s:{season_id} - Data directory already exists."
+                    )
+                    continue
+
+                print(
+                    f"\n  Processing MISSING season: Tournament={tour_id}, Season={season_id}"
+                )
+                utils.run_initial_scrapes(tour_id, season_id)
+                utils.run_repair_cycle(tour_id, season_id)
+
         print("✅ Stage Complete.")
 
     print("\n Pipeline execution finished.")

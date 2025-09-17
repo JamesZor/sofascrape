@@ -205,15 +205,22 @@ pl_rerun = [61627, 52186, 41886, 37036, 29415]
 champ_l = [61961, 52367, 42401, 37154, 29438]
 league_one = [61959, 52370, 42402, 37155, 29439]  # 3
 league_two = [61960, 52368, 42403, 37156, 29441]  # 84
+
+
+# - Scottish Cup (ID: 73, Slug: scottish-cup)
+
 if __name__ == "__main__":
     # t_id = 84
-    # get_seaons_ids(t_id)
+    get_seaons_ids(73)
+    get_seaons_ids(16)
+    get_seaons_ids(17)
+
     # s_id = 29439
     # run_two_scrapes(tournament_id=t_id, season_id=s_id)
 
     # to process to df
     # build_golden(main_data)
-    process_to_df(main_data, "england_20_25")
+    # process_to_df(main_data, "england_20_25")
 
     # for season_id in league_two:
     #     print(f"season :{season_id}")
