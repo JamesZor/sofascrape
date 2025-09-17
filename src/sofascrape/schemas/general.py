@@ -201,7 +201,7 @@ class EventSchema(ConvertibleBaseModel):
 
     tournament: Optional[TournamentSchema] = None
     season: Optional[SeasonSchema] = None
-    roundInfo: RoundInfoSchema
+    roundInfo: Optional[RoundInfoSchema] = None
 
     winnerCode: Optional[int] = None
     homeScore: Optional[ScoreFootballSchema] = None
