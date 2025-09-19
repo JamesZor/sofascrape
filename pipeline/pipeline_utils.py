@@ -3,9 +3,6 @@ import time
 from pathlib import Path
 from typing import Dict, Set
 
-from webdriver import MyWebDriver  # Assuming this is your webdriver import
-
-from sofascrape.football.events import EventsComponentScraper
 from sofascrape.loader.footballDataManager import FootballDataManager
 
 # Assuming these classes are in these locations based on your files
