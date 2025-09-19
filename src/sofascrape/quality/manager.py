@@ -41,6 +41,66 @@ class SeasonQualityManager:
     # ========================================================================
     # Scraping operations
     # ========================================================================
+    def execute_incremental_scrape(self) -> bool:
+        """
+        Executes an efficient, incremental scrape.
+        1. Fetches all match IDs for the season.
+        2. Compares against the existing golden dataset.
+        3. Scrapes only the new, unprocessed matches.
+        Returns:
+            True if new matches were found and scraped, False otherwise.
+        """
+        logger.info(
+            f"Starting incremental scrape for t:{self.tournament_id} s:{self.season_id}..."
+        )
+
+        # 1. Get matches we have already processed from the golden data
+        try:
+            golden_data = self.storage.load_golden_dataset()
+            processed_ids = set(golden_data.keys()) if golden_data else set()
+            logger.info(
+                f"Found {len(processed_ids)} matches in existing golden dataset."
+            )
+        except FileNotFoundError:
+            processed_ids = set()
+            logger.info("No existing golden dataset found. Will perform a full scrape.")
+
+        # 2. Get all match IDs from the source using the scraper
+        # We temporarily instantiate a scraper just to get the event list
+        scraper_for_events = SeasonFootballScraper(
+            tournamentid=self.tournament_id, seasonid=self.season_id
+        )
+        scraper_for_events._get_events()  # This populates scraper_for_events.valid_matchids
+        all_source_ids = set(scraper_for_events.valid_matchids)
+
+        if not all_source_ids:
+            logger.warning(
+                "Could not retrieve any completed matches from source. Aborting."
+            )
+            return False
+
+        # 3. Find the difference
+        new_match_ids = all_source_ids - processed_ids
+
+        if not new_match_ids:
+            logger.info("No new matches to scrape. Season is up-to-date.")
+            return False
+
+        logger.info(f"Found {len(new_match_ids)} new matches to scrape.")
+
+        # 4. Execute a targeted scrape
+        season_scraper = SeasonFootballScraper(
+            tournamentid=self.tournament_id, seasonid=self.season_id
+        )
+        # Instruct the scraper to ONLY run on the new match IDs
+        season_scraper.scrape(use_threading=True, match_ids_to_scrape=new_match_ids)
+
+        # 5. Save the results as a new (partial) run
+        # We'll save it as a retry/partial run to distinguish it
+        self.storage.save_scraping_run_retry(run_data=season_scraper.data)
+
+        return True
+
     def execute_scraping_run(self) -> None:
         """Execute a single scraping run and save results"""
         season_scraper = SeasonFootballScraper(
