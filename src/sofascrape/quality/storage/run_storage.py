@@ -465,3 +465,40 @@ class StorageHandler:
             logger.info(f"File golden saved @ {file = }.")
         except Exception as e:
             logger.error(f"Faid @{file=} : {str(e)}.")
+
+    def load_golden_dataset(
+        self,
+    ) -> Optional[Dict[int, sofaschemas.FootballMatchResultDetailed]]:
+        """
+        Loads the golden dataset for the season.
+        Returns None if the file does not exist.
+        """
+        file_path: Path = self.dir_golden / "golden_data.pkl"
+
+        if not file_path.exists():
+            logger.info(
+                f"Golden dataset file not found at {file_path}. Returning None."
+            )
+            return None
+
+        try:
+            with open(file_path, "rb") as f:
+                golden_data = pickle.load(f)
+
+            if not isinstance(golden_data, dict):
+                logger.warning(
+                    f"Golden data at {file_path} is not a dictionary. Returning None."
+                )
+                return None
+
+            logger.info(f"Successfully loaded golden dataset from {file_path}.")
+            return golden_data
+
+        except (pickle.UnpicklingError, EOFError) as e:
+            logger.error(f"Failed to unpickle golden dataset from {file_path}: {e}")
+            return None
+        except Exception as e:
+            logger.error(
+                f"An unexpected error occurred while loading golden dataset from {file_path}: {e}"
+            )
+            raise

@@ -73,7 +73,6 @@ def main():
     process_settings = config.get("process_settings", {})
 
     # --- Execute the chosen command ---
-
     if args.command in ["update", "run-all"]:
         print("\n Starting Stage 1: Update Live Seasons...")
         live_season_ids = set(process_settings.get("live_seasons", []))
@@ -84,11 +83,9 @@ def main():
             for tour_id, season_list in all_seasons.items():
                 for season_id in season_list:
                     if season_id in live_season_ids:
-                        print(
-                            f"\nProcessing LIVE season: Tournament={tour_id}, Season={season_id}"
-                        )
-                        utils.run_initial_scrapes(tour_id, season_id)
-                        utils.run_repair_cycle(tour_id, season_id)
+                        # Call the new, smart update function
+                        utils.run_incremental_update(tour_id, season_id)
+
         print("✅ Stage 1 Complete.")
 
     if args.command in ["build-golden", "run-all"]:

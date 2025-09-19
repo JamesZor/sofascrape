@@ -3,6 +3,9 @@ import time
 from pathlib import Path
 from typing import Dict, Set
 
+from webdriver import MyWebDriver  # Assuming this is your webdriver import
+
+from sofascrape.football.events import EventsComponentScraper
 from sofascrape.loader.footballDataManager import FootballDataManager
 
 # Assuming these classes are in these locations based on your files
@@ -159,3 +162,25 @@ def data_exists_for_season(tournament_id: int, season_id: int) -> bool:
 
     season_path = base_data_dir / f"tournament_{tournament_id}" / f"season_{season_id}"
     return season_path.exists()
+
+
+# feat: pipeline update
+def run_incremental_update(tournament_id: int, season_id: int):
+    """
+    Orchestrates an efficient update by calling the SeasonQualityManager.
+    """
+    print(
+        f"\nStarting incremental update for LIVE season: T={tournament_id}, S={season_id}"
+    )
+
+    manager = SeasonQualityManager(tournament_id=tournament_id, season_id=season_id)
+    new_matches_found = manager.execute_incremental_scrape()
+
+    if new_matches_found:
+        print(
+            "    - New matches were scraped. Rebuilding consensus and golden dataset..."
+        )
+        run_repair_cycle(tournament_id, season_id)
+        build_golden_dataset(tournament_id, season_id)
+
+    print("✅ Incremental update complete.")

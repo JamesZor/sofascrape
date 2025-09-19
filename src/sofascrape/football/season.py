@@ -3,7 +3,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -40,8 +40,11 @@ class SeasonFootballScraper(BaseSeasonScraper):
         self.matches: List[schemas.SeasonEventSchema] = []
         self.valid_matchids: List[int] = []
 
-    def _get_events(self) -> None:
-        """Get all events/matches for the season"""
+    def _get_events(self, match_ids_to_scrape: Optional[Set[int]] = None) -> None:
+        """
+        Get all events/matches for the season.
+        If match_ids_to_scrape is provided, it only validates against that set.
+        """
         try:
             driver = self.mw.spawn_webdriver()
 
@@ -55,16 +58,27 @@ class SeasonFootballScraper(BaseSeasonScraper):
             self.events_scraper.process()  # data in events_scraper.data. # eventslistschema -> for event in events
 
             if self.events_scraper is not None:
-                # Filter for completed matches (status code 100)
-                self.valid_matchids = [
+                all_completed_matches = {
                     event.id
                     for event in self.events_scraper.data.events
                     if event.status.code == 100
-                ]
+                }
 
-                logger.info(
-                    f"Found {len(self.valid_matchids)} completed matches in season {self.seasonid}"
-                )
+                if match_ids_to_scrape:
+                    # ---  Filter based on the provided set ---
+                    self.valid_matchids = list(
+                        all_completed_matches.intersection(match_ids_to_scrape)
+                    )
+                    logger.info(
+                        f"Targeted scrape: Found {len(self.valid_matchids)} new completed matches to process."
+                    )
+                else:
+                    # ---  Get all completed matches ---
+                    self.valid_matchids = list(all_completed_matches)
+                    logger.info(
+                        f"Full scrape: Found {len(self.valid_matchids)} completed matches in season {self.seasonid}"
+                    )
+
         except Exception as e:
             logger.error(f"Failed to get events for season {self.seasonid}: {str(e)}")
         finally:
@@ -311,19 +325,38 @@ class SeasonFootballScraper(BaseSeasonScraper):
         return results
 
     def scrape(
-        self, use_threading: bool = True, max_workers: Optional[int] = None
+        self,
+        use_threading: bool = True,
+        max_workers: Optional[int] = None,
+        match_ids_to_scrape: Optional[Set[int]] = None,
     ) -> None:
-        """Main scraping method"""
+        """
+        Main scraping method. Can be limited to a specific set of match IDs.
+        """
         if max_workers is None:
             max_workers = self.cfg.scrape.max_workers
 
-        self._get_events()
-        if use_threading:
-            self.data: schemas.SeasonScrapingResult = self.process_events_threaded(
-                max_workers
+        self._get_events(match_ids_to_scrape=match_ids_to_scrape)  # <-- PASS IT DOWN
+
+        # Only proceed if there are matches to scrape
+        if not self.valid_matchids:
+            logger.warning("No valid matches found to scrape for this run.")
+            # Create an empty result to avoid errors
+            self.data = schemas.SeasonScrapingResult(
+                tournament_id=self.tournamentid,
+                season_id=self.seasonid,
+                matches=[],
+                total_matches=0,
+                successful_matches=0,
+                failed_matches=0,
+                scraping_duration=0,
             )
+            return
+
+        if use_threading:
+            self.data = self.process_events_threaded(max_workers)
         else:
-            self.data: schemas.SeasonScrapingResult = self.process_events_sequential()
+            self.data = self.process_events_sequential()
 
     # HACK: - Remove it ?
     def _scrape_debug(self, use_threading: bool = True, max_workers: int = 3) -> None:
