@@ -1,5 +1,6 @@
 import argparse
 import logging
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict
 
@@ -18,9 +19,14 @@ logging.getLogger("sofascrape").setLevel(logging.WARNING)
 logging.getLogger("webdriver").setLevel(logging.WARNING)
 
 
-def load_config(
-    path: str = "/home/james/bet_project/sofascrape/pipeline/config.yaml",
-) -> Dict[str, Any]:
+class ConfigPathsChoice(Enum):
+    basic_uk = "/home/james/bet_project/sofascrape/pipeline/config.yaml"
+    scottish = (
+        "/home/james/bet_project/sofascrape/pipeline/config_scottish_leagues.yaml.yaml"
+    )
+
+
+def load_config(path: str = ConfigPathsChoice.scottish.value) -> Dict[str, Any]:
     """Loads the YAML configuration file."""
     with open(path, "r") as f:
         return yaml.safe_load(f)  # type: ignore[no-any-return]
