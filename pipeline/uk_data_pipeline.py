@@ -22,7 +22,7 @@ logging.getLogger("webdriver").setLevel(logging.WARNING)
 class ConfigPathsChoice(Enum):
     basic_uk = "/home/james/bet_project/sofascrape/pipeline/config.yaml"
     scottish = (
-        "/home/james/bet_project/sofascrape/pipeline/config_scottish_leagues.yaml.yaml"
+        "/home/james/bet_project/sofascrape/pipeline/config_scottish_leagues.yaml"
     )
 
 
