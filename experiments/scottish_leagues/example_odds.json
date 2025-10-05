@@ -1,32 +1,3 @@
-import json
-from typing import List
-
-from omegaconf import OmegaConf
-from webdriver import ManagerWebdriver, MyWebDriver
-
-odds_api: str = "https://www.sofascore.com/api/v1/event/{match_id}/odds/1/all"
-
-scottish_l2_s25_matchids: List[int] = [
-    14035666,
-    14035662,
-    14035664,
-    14035663,
-    14035665,
-    14035670,
-]
-
-
-mw = ManagerWebdriver()
-web = mw.spawn_webdriver()
-# web.close()
-url = odds_api.format(match_id=scottish_l2_s25_matchids[0])
-r = web.get_page(odds_api)
-web.navigate(odds_api)
-web.get_page(odds_api)
-web.config
-print(json.dumps(r, indent=6))
-
-"""
 {
     "markets": [
         {
@@ -549,4 +520,3 @@ print(json.dumps(r, indent=6))
     ],
     "eventId": 14035666,
 }
-"""
