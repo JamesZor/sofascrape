@@ -24,9 +24,12 @@ class ConfigPathsChoice(Enum):
     scottish = (
         "/home/james/bet_project/sofascrape/pipeline/config_scottish_leagues.yaml"
     )
+    scottish_test = (
+        "/home/james/bet_project/sofascrape/pipeline/config_scottish_leagues_test.yaml"
+    )
 
 
-def load_config(path: str = ConfigPathsChoice.scottish.value) -> Dict[str, Any]:
+def load_config(path: str = ConfigPathsChoice.scottish_test.value) -> Dict[str, Any]:
     """Loads the YAML configuration file."""
     with open(path, "r") as f:
         return yaml.safe_load(f)  # type: ignore[no-any-return]
