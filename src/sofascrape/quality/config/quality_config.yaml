@@ -18,6 +18,7 @@ quality:
     lineup: []
     incidents: []
     graph: []
+    odds: []
 
   # Retry configuration
   retry:
