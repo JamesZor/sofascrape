@@ -43,7 +43,7 @@ class TestOddsSchema:
         validated_odds = OddsSchema.model_validate(odds_data)
 
         # --- Displaying the validated data for visual inspection ---
-        print("\n--- ✅ Validated Pydantic Model Output ---")
+        print("\n---Validated Pydantic Model Output ---")
         print(validated_odds.model_dump_json(indent=2, by_alias=True))
         print("--- End of Model Output ---")
 
