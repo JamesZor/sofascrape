@@ -18,16 +18,6 @@ def parse_fraction(v: str) -> Tuple[int, int]:
         raise ValueError(f"'{v}' is not a valid fractional value string")
 
 
-# class OddsChoiceSchema(BaseModel):
-#     """Represents a single outcome within a betting market (e.g., '1', 'X', '2')."""
-#
-#     initial_fractional_value: str = Field(..., alias="initialFractionalValue")
-#     fractional_value: str = Field(..., alias="fractionalValue")
-#     source_id: int = Field(..., alias="sourceId")
-#     name: str
-#     winning: Optional[bool] = None
-#     change: int
-#
 class OddsChoiceSchema(BaseModel):
     """Represents a single outcome with parsed fractional values."""
 

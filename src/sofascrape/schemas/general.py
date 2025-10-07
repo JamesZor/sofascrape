@@ -1,8 +1,12 @@
+# schemas/general.py
+
 from datetime import datetime
 from enum import Enum
 from typing import Annotated, Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
+
+from .odds import OddsSchema
 
 ##############################
 # Enhanced Base Models with Conversion Methods
@@ -815,6 +819,7 @@ class MatchScrapingErrors(ConvertibleBaseModel):
     lineup: ComponentError
     incidents: ComponentError
     graph: ComponentError
+    odds: ComponentError
 
     @property
     def has_errors(self) -> bool:
@@ -874,6 +879,7 @@ class FootballMatchResultDetailed(ConvertibleBaseModel):
     lineup: Optional[FootballLineupSchema] = None
     incidents: Optional[FootballIncidentsSchema] = None
     graph: Optional[FootballGraphSchema] = None
+    odds: Optional[OddsSchema] = None
 
     # Detailed error tracking
     errors: Optional[MatchScrapingErrors] = None
@@ -905,17 +911,22 @@ class FootballMatchResultDetailed(ConvertibleBaseModel):
         return self.graph is not None
 
     @property
+    def has_odds_data(self) -> bool:
+        """Check if odds component data is available"""
+        return self.odds is not None
+
+    @property
     def success_rate(self) -> str:
         """Get success rate as string"""
-        successful = len(self.errors.successful_components)
-        total = successful + len(self.errors.failed_components)
+        successful = len(self.errors.successful_components)  # type: ignore[union-attr]
+        total = successful + len(self.errors.failed_components)  # type: ignore[union-attr]
         return f"{successful}/{total}"
 
     @property
     def has_base_data(self) -> bool:
         """Check if base data is available"""
         return (
-            self.base is not None and self.errors.base.status == ComponentStatus.SUCCESS
+            self.base is not None and self.errors.base.status == ComponentStatus.SUCCESS  # type: ignore[union-attr]
         )
 
     def get_match_info(self) -> Optional[Dict]:

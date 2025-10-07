@@ -1,3 +1,4 @@
+# football/matchScrape
 import datetime
 import logging
 from enum import Enum
@@ -7,12 +8,14 @@ from omegaconf import DictConfig
 from webdriver import MyWebDriver
 
 import sofascrape.schemas.general as schemas
+import sofascrape.schemas.odds as SchemaOdds
 from sofascrape.abstract.base import BaseMatchScraper
 
 from .eventComponent import EventFootallComponentScraper
 from .graphComponent import FootballGraphComponentScraper
 from .incidentsComponent import FootballIncidentsComponentScraper
 from .lineupComonent import FootballLineupComponentScraper
+from .oddsComponent import FootballOddsComponentScraper
 from .statsComponent import FootballStatsComponentScraper
 
 logger = logging.getLogger(__name__)
@@ -26,6 +29,7 @@ class MatchComponentType(Enum):
     LINEUP = FootballLineupComponentScraper
     INCIDENTS = FootballIncidentsComponentScraper
     GRAPH = FootballGraphComponentScraper
+    ODDS = FootballOddsComponentScraper
 
 
 # Union type for all possible data types
@@ -35,6 +39,7 @@ ComponentDataType = Union[
     schemas.FootballLineupSchema,
     schemas.FootballIncidentsSchema,
     schemas.FootballGraphSchema,
+    SchemaOdds.OddsSchema,
 ]
 
 
@@ -94,6 +99,7 @@ class FootballMatchScraper(BaseMatchScraper):
             lineup=self._create_component_error("lineup"),
             incidents=self._create_component_error("incidents"),
             graph=self._create_component_error("graph"),
+            odds=self._create_component_error("odds"),
         )
 
     def _scrape_single_component(self, component_type: MatchComponentType) -> tuple:
