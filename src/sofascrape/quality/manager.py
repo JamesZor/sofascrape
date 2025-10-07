@@ -196,25 +196,70 @@ class SeasonQualityManager:
         return runs_dict
 
     # TEST:
+    # def build_golden_seaosn_dataset(
+    #     self, golden_dict: Dict[int, Dict[str, int]]
+    # ) -> Dict[int, sofaschema.FootballMatchResultDetailed]:
+    #     """Complie the good data together from all the runs and retry datasets.
+    #     Example of golden_dict:
+    #     {12476980: {'graph': 2, 'stats': 2, 'lineup': 2, 'base': 2, 'incidents': 2}, 12476946: {'graph': 1, 'stats': 1, 'lineup': 2, 'base': 1, 'incidents': 1}}
+    #
+    #     """
+    #     runs = self.load_available_runs_dict()
+    #
+    #     results: Dict[int, sofaschema.FootballMatchResultDetailed] = {}
+    #
+    #     for match_id, golden_componets in golden_dict.items():
+    #         match_data: Dict = {"match_id": match_id}
+    #         for compoent_name, runID in golden_componets.items():
+    #             match_data[compoent_name] = getattr(
+    #                 runs[runID][match_id], compoent_name
+    #             )
+    #
+    #         results[match_id] = sofaschema.FootballMatchResultDetailed(**match_data)
+    #
+    #     return results
     def build_golden_seaosn_dataset(
         self, golden_dict: Dict[int, Dict[str, int]]
     ) -> Dict[int, sofaschema.FootballMatchResultDetailed]:
-        """Complie the good data together from all the runs and retry datasets.
-        Example of golden_dict:
-        {12476980: {'graph': 2, 'stats': 2, 'lineup': 2, 'base': 2, 'incidents': 2}, 12476946: {'graph': 1, 'stats': 1, 'lineup': 2, 'base': 1, 'incidents': 1}}
-
         """
-        runs = self.load_available_runs_dict()
+        Compiles the best available data from all runs into a golden dataset.
+        This version intelligently merges partial runs (e.g., an odds-only run).
+        """
+        print("Building golden dataset by merging all available components...")
+        runs = self.load_available_runs_dict()  # {run_id: {match_id: match_data}}
+
+        # Get a set of all unique match IDs from all runs
+        all_match_ids: Set = set()
+        for run_id, matches in runs.items():
+            all_match_ids.update(matches.keys())
+
+        print(f"Found a total of {len(all_match_ids)} unique matches across all runs.")
 
         results: Dict[int, sofaschema.FootballMatchResultDetailed] = {}
+        active_components = self.config.quality.active_components
 
-        for match_id, golden_componets in golden_dict.items():
-            match_data: Dict = {"match_id": match_id}
-            for compoent_name, runID in golden_componets.items():
-                match_data[compoent_name] = getattr(
-                    runs[runID][match_id], compoent_name
-                )
+        for match_id in all_match_ids:
+            # For each match, create a dictionary to hold the best component found
+            compiled_data: Dict[str, Any] = {"match_id": match_id}
 
-            results[match_id] = sofaschema.FootballMatchResultDetailed(**match_data)
+            for component_name in active_components:
+                # Search across all runs to find the first valid data for this component
+                component_found = False
+                for run_id in runs:
+                    if match_id in runs[run_id]:
+                        match_from_run = runs[run_id][match_id]
+                        component_data = getattr(match_from_run, component_name, None)
+                        if component_data is not None:
+                            compiled_data[component_name] = component_data
+                            component_found = True
+                            break  # Stop searching once we find the component
 
+                if not component_found:
+                    # Explicitly set to None if not found in any run
+                    compiled_data[component_name] = None
+
+            # Create the final, merged match object
+            results[match_id] = sofaschema.FootballMatchResultDetailed(**compiled_data)
+
+        print(f"Successfully compiled {len(results)} matches for the golden dataset.")
         return results
