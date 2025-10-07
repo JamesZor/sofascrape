@@ -238,6 +238,9 @@ class FootballDataTransformer:
         if "momentum" in data_types:
             self.dataframes["momentum"] = self._create_momentum_df(loaded_data)
 
+        if "odds" in data_types:
+            self.dataframes["odds"] = self._create_odds_df(loaded_data)
+
         # Validate output
         self._validate_output()
 
@@ -791,6 +794,81 @@ class FootballDataTransformer:
                             raise
 
         return pd.DataFrame(momentum_data)
+
+    def _convert_fractional_to_decimal(
+        self, fractional_tuple: Optional[tuple[int, int]]
+    ) -> Optional[float]:
+        """Converts a fractional odd tuple (e.g., (5, 2)) to a decimal float."""
+        if not isinstance(fractional_tuple, tuple) or len(fractional_tuple) != 2:
+            return None
+        try:
+            numerator, denominator = fractional_tuple
+            if denominator == 0:
+                return None
+            # The formula for decimal odds is (numerator / denominator) + 1
+            return (numerator / denominator) + 1.0
+        except (ValueError, TypeError):
+            logger.warning(f"Could not convert fractional tuple: {fractional_tuple}")
+            return None
+
+    def _create_odds_df(self, loaded_data: Dict) -> pd.DataFrame:
+        """Create a DataFrame for match odds with optional decimal conversion."""
+        odds_data = []
+        # Load odds processing config from your transformationConfig.yaml
+        odds_config = self.config.get("odds_processing", {})
+        convert_to_decimal = odds_config.get("convert_to_decimal", False)
+        decimal_precision = odds_config.get("decimal_precision", 2)
+
+        for tournament_id, tournament_data in loaded_data.items():
+            for season_id, season_data in tournament_data.items():
+                for match_id, match_data in season_data.items():
+                    try:
+                        if not match_data.odds or not match_data.odds.markets:
+                            continue
+
+                        for market in match_data.odds.markets:
+                            for choice in market.choices:
+                                # Create the base dictionary for the row
+                                odds_dict = {
+                                    "tournament_id": tournament_id,
+                                    "season_id": season_id,
+                                    "match_id": match_id,
+                                    "market_id": market.market_id,
+                                    "market_name": market.market_name,
+                                    "market_group": market.market_group,
+                                    "choice_name": choice.name,
+                                    # Convert tuple to a readable string for the CSV output
+                                    "initial_fractional_value": f"{choice.initial_fractional_value[0]}/{choice.initial_fractional_value[1]}",
+                                    "final_fractional_value": f"{choice.fractional_value[0]}/{choice.fractional_value[1]}",
+                                    "winning": choice.winning,
+                                }
+
+                                # Conditionally convert the final fractional TUPLE to decimal
+                                if convert_to_decimal:
+                                    # Pass the tuple directly to the conversion function
+                                    decimal_odds = self._convert_fractional_to_decimal(
+                                        choice.fractional_value
+                                    )
+                                    odds_dict["decimal_odds"] = (
+                                        round(decimal_odds, decimal_precision)
+                                        if decimal_odds is not None
+                                        else None
+                                    )
+
+                                odds_data.append(odds_dict)
+
+                    except Exception as e:
+                        error_msg = (
+                            f"Error processing odds for match {match_id}: {str(e)}"
+                        )
+                        logger.error(error_msg)
+                        self.transformation_errors.append(error_msg)
+                        if (
+                            not self.config.data_quality.error_handling.continue_on_error
+                        ):
+                            raise
+
+        return pd.DataFrame(odds_data)
 
     def _validate_output(self) -> None:
         """Validate generated DataFrames against configuration rules"""

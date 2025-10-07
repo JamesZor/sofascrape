@@ -6,6 +6,7 @@ data_extraction:
     - match_stats
     - player_stats
     - incidents
+    - odds
 #    - momentum
   
   # Which statistical periods to include in match_stats
@@ -64,6 +65,11 @@ stats_processing:
     percentage_to_decimal: false   # "45%" -> 0.45 vs 45.0
     null_stat_handling: "zero"     # Replace None with 0, "null", or "skip"
     invalid_value_action: "log"    # "skip", "log", "error" for bad values
+
+odds_processing:
+  # Settings for handling odds data
+  convert_to_decimal: true  # Set to true to add a decimal odds column
+  decimal_precision: 2      # Number of decimal places for the converted odds
 
 data_formatting:
   # How to handle timestamps
