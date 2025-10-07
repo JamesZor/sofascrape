@@ -1,0 +1,14 @@
+process_settings:
+  # Seasons that are currently in-progress and require scraping and updates.
+  # These are the season IDs for the 25/26 season.
+  live_seasons:
+    - 77037 # Scotland - Championship
+    
+  # The final destination for the processed CSV files.
+  output_directory: "scotland_odds_test"
+
+
+data_scope:
+  scotland:
+    55:
+      - 77037 # 25/26 

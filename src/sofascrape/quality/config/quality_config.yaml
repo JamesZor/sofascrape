@@ -1,7 +1,8 @@
 # Quality assessment configuration
 quality:
   # Which components to process (can disable some for testing)
-  active_components: ["base" , "lineup", "incidents"]
+  # active_components: ["base" , "lineup", "incidents"]
+  active_components: ["base" , "lineup", "incidents", "odds"]
   #active_components: ["base" , "stats", "lineup", "incidents"]
   # active_components: ["base", "stats", "lineup", "incidents", "graph"]
 #    - "base"
@@ -17,6 +18,7 @@ quality:
     lineup: []
     incidents: []
     graph: []
+    odds: []
 
   # Retry configuration
   retry:
