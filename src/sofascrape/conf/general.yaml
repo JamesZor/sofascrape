@@ -6,7 +6,7 @@ defaults:
 
 # HACK: - extend this 
 scrape:
-  max_workers: 3
+  max_workers: 10
 #  match_active_components: ["base", "stats", "lineup", "incidents"] 
   # match_active_components: ["base", "lineup", "incidents"] 
 
