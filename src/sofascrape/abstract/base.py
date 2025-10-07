@@ -59,34 +59,26 @@ class BaseComponentScraper(BaseScraperModel, ABC, Generic[T]):
 
         pass
 
-    def process(self) -> T:
+    def process(self) -> Optional[T]:  # Make sure the return type is Optional[T]
         """High-level workflow: fetch, parse, and return data."""
-
         try:
-
-            logger.info(f"Starting processing...")
-
+            # self.get_data() can now potentially set self.raw_data to None
             self.get_data()
 
-            # Moved validation to parent
-
+            # If get_data() resulted in no data (e.g., a 404), just return None.
             if self.raw_data is None:
-
-                raise ValueError(
-                    "No raw data available. get_data() failed to set raw_data."
+                logger.warning(
+                    "No raw data available to process. Component will return None."
                 )
+                return None
 
             self.parse_data()
-
-            logger.info(f"Successfully processed data")
-
             return self.data
 
         except Exception as e:
-
-            logger.error(f"Processing failed: {str(e)}")
-
-            raise
+            logger.error(f"Processing failed with an exception: {str(e)}")
+            # In case of an unexpected error, return None to prevent crashing the whole scrape
+            return None
 
 
 class BaseMatchScraper(BaseScraperModel, ABC):
