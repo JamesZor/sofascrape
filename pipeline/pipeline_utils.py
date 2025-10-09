@@ -1,7 +1,7 @@
 import logging
 import time
 from pathlib import Path
-from typing import Dict, Set
+from typing import Any, Dict, Set
 
 from sofascrape.loader.footballDataManager import FootballDataManager
 
@@ -181,3 +181,31 @@ def run_incremental_update(tournament_id: int, season_id: int):
         build_golden_dataset(tournament_id, season_id)
 
     print("✅ Incremental update complete.")
+
+
+def get_all_seasons_from_scope(data_scope: Dict) -> Dict[int, list[int]]:
+    """Helper to get all tournament/season pairs from the config."""
+    all_seasons: Dict = {}
+    for country, tournaments in data_scope.items():
+        for tour_id, season_list in tournaments.items():
+            tour_id = int(tour_id)  # Ensure key is integer
+            if tour_id not in all_seasons:
+                all_seasons[tour_id] = []
+            all_seasons[tour_id].extend(season_list)
+    return all_seasons
+
+
+def run_full_repair(data_scope: Dict[str, Any]):
+    """
+    Runs the repair cycle for all tournaments and seasons defined in the data scope.
+    """
+    print("\n⚙️ Starting Full Repair For All Seasons...")
+    all_seasons = get_all_seasons_from_scope(data_scope)
+    if not all_seasons:
+        print("No seasons defined in the data_scope of your config. Nothing to repair.")
+        return
+
+    for tour_id, season_list in all_seasons.items():
+        for season_id in season_list:
+            run_repair_cycle(tour_id, season_id)
+    print("✅ Full Repair Stage Complete.")
