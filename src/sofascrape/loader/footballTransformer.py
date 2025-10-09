@@ -837,6 +837,7 @@ class FootballDataTransformer:
                                     "market_name": market.market_name,
                                     "market_group": market.market_group,
                                     "choice_name": choice.name,
+                                    "choice_group": market.choice_group,
                                     # Convert tuple to a readable string for the CSV output
                                     "initial_fractional_value": f"{choice.initial_fractional_value[0]}/{choice.initial_fractional_value[1]}",
                                     "final_fractional_value": f"{choice.fractional_value[0]}/{choice.fractional_value[1]}",
