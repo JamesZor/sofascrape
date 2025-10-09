@@ -10,7 +10,7 @@ scrape:
 #  match_active_components: ["base", "stats", "lineup", "incidents"] 
   # match_active_components: ["base", "lineup", "incidents"] 
 
-  match_active_components: ["base", "lineup", "incidents", "odds"] 
+  match_active_components: ["base", "stats", "lineup", "incidents", "odds"] 
   # active_components: ["base", "stats", "lineup", "incidents", "graph"]
   wait_time_after_single_scrape: 2
 
