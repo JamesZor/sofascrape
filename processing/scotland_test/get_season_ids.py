@@ -51,6 +51,9 @@ sofa_tournament_ids = {
     "scot_ch": 55,
 }
 
+
+# - National League (ID: 72, Slug: national-league)
+
 if __name__ == "__main__":
 
     mw = ManagerWebdriver()
