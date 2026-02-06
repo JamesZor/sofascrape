@@ -33,7 +33,7 @@ class ConfigPathsChoice(Enum):
 
 
 def load_config(
-    path: str = ConfigPathsChoice.england_national_league.value,
+    path: str = ConfigPathsChoice.scottish.value,
 ) -> Dict[str, Any]:
     """Loads the YAML configuration file."""
     with open(path, "r") as f:

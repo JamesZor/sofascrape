@@ -2,14 +2,14 @@ process_settings:
   # Seasons that are currently in-progress and require scraping and updates.
   # These are the season IDs for the 25/26 season.
   live_seasons:
-    - 77128 # Scotland - Premiership
-    - 77037 # Scotland - Championship
+    # - 77128 # Scotland - Premiership
+    # - 77037 # Scotland - Championship
     - 77129 # Scotland - League 1 
     - 77045 # Scotland - League 2
     
-    - 81893 # Scotland - cup 25/26
+    # - 81893 # Scotland - cup 25/26
   # The final destination for the processed CSV files.
-  output_directory: "scotland_football"
+  output_directory: "scotland_football_v2"
 
 
 data_scope:
