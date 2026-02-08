@@ -1,7 +1,9 @@
 # Quality assessment configuration
 quality:
   # Which components to process (can disable some for testing)
-  active_components: ["base" , "lineup", "incidents", "odds"]
+  # active_components: ["base" , "lineup", "incidents"]
+  # active_components: ["base", "incidents", "lineup"]
+  active_components: ["odds"]
   # active_components: ["base", "stats", "lineup", "incidents", "odds"]
   # active_components: ["base", "stats", "lineup", "odds"]
   #active_components: ["base" , "stats", "lineup", "incidents"]
@@ -23,7 +25,7 @@ quality:
 
   # Retry configuration
   retry:
-    max_attempts: 3
+    max_attempts: 2
     delay_seconds: 60.0
     
 
