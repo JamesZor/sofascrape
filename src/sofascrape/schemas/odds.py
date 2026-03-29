@@ -26,8 +26,7 @@ class OddsChoiceSchema(BaseModel):
         ..., alias="initialFractionalValue"
     )
     fractional_value: Tuple[int, int] = Field(..., alias="fractionalValue")
-
-    source_id: int = Field(..., alias="sourceId")
+    source_id: Optional[int] = Field(None, alias="sourceId")
     name: str
     winning: Optional[bool] = None
     change: int

@@ -1,0 +1,30 @@
+process_settings:
+  # Seasons that are currently in-progress and require scraping and updates.
+  # These are the season IDs for the 25/26 season.
+  live_seasons:
+      - 78229
+  # The final destination for the processed CSV files.
+  output_directory: "england_national_league"
+
+
+data_scope:
+  england:
+    # Premiership
+    72:
+       - 78229 # 25/26
+       - 63807 # 24/25
+       - 52783 # 23/24
+
+# 25/26 - 78229 year='25/26'
+# 24/25 - 63807 year='24/25'
+# 23/24 - 52783 year='23/24'
+# 22/23 - 42666 year='22/23'
+# 21/22 - 37339 year='21/22'
+# 20/21 - 32516 year='20/21'
+# 19/20 - 24130 year='19/20'
+# 18/19 - 17826 year='18/19'
+# 17/18 - 13527 year='17/18'
+# 16/17 - 11903 year='16/17'
+# 15/16 - 10456 year='15/16'
+# 14/15 - 8454 year='14/15' 
+

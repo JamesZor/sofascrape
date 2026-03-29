@@ -27,24 +27,17 @@ class ConfigPathsChoice(Enum):
     scottish_test = (
         "/home/james/bet_project/sofascrape/pipeline/config_scottish_leagues_test.yaml"
     )
+    england_national_league = (
+        "/home/james/bet_project/sofascrape/pipeline/config_england_national.yaml"
+    )
 
 
-def load_config(path: str = ConfigPathsChoice.scottish.value) -> Dict[str, Any]:
+def load_config(
+    path: str = ConfigPathsChoice.scottish.value,
+) -> Dict[str, Any]:
     """Loads the YAML configuration file."""
     with open(path, "r") as f:
         return yaml.safe_load(f)  # type: ignore[no-any-return]
-
-
-def get_all_seasons_from_scope(data_scope: Dict) -> Dict[int, list[int]]:
-    """Helper to get all tournament/season pairs from the config."""
-    all_seasons: Dict = {}
-    for country, tournaments in data_scope.items():
-        for tour_id, season_list in tournaments.items():
-            tour_id = int(tour_id)  # Ensure key is integer
-            if tour_id not in all_seasons:
-                all_seasons[tour_id] = []
-            all_seasons[tour_id].extend(season_list)
-    return all_seasons
 
 
 def main():
@@ -65,6 +58,7 @@ def main():
             "run-all",
             "check-consensus",
             "scrape-all",
+            "repair",
         ],  # Add "check-consensus" here
         help="""The pipeline stage to execute:
   - update:          Scrape and repair only the 'live_seasons' defined in config.
@@ -73,6 +67,7 @@ def main():
   - run-all:         Execute the entire pipeline: update -> build-golden -> export.
   - check-consensus: Print the summary of the latest consensus for ALL seasons.
   - scrape-all:      Scrape ALL seasons in config that don't already have data.
+  - repair:          Run consensus and repair scrape for ALL seasons in config.
 """,
     )
 
@@ -88,7 +83,7 @@ def main():
         if not live_season_ids:
             print("No live seasons defined in config.yaml. Skipping update.")
         else:
-            all_seasons = get_all_seasons_from_scope(data_scope)
+            all_seasons = utils.get_all_seasons_from_scope(data_scope)
             for tour_id, season_list in all_seasons.items():
                 for season_id in season_list:
                     if season_id in live_season_ids:
@@ -99,7 +94,7 @@ def main():
 
     if args.command in ["build-golden", "run-all"]:
         print("\n Starting Stage 2: Build Golden Datasets...")
-        all_seasons = get_all_seasons_from_scope(data_scope)
+        all_seasons = utils.get_all_seasons_from_scope(data_scope)
         for tour_id, season_list in all_seasons.items():
             for season_id in season_list:
                 utils.build_golden_dataset(tour_id, season_id)
@@ -107,7 +102,7 @@ def main():
 
     if args.command in ["export", "run-all"]:
         print("\n Starting Stage 3: Export to CSV...")
-        all_seasons = get_all_seasons_from_scope(data_scope)
+        all_seasons = utils.get_all_seasons_from_scope(data_scope)
         output_dir = process_settings.get("output_directory", "output")
         # Convert list of seasons to set for the data manager
         export_dict = {
@@ -118,7 +113,7 @@ def main():
 
     elif args.command == "check-consensus":
         print("\n📊 Starting Stage: Check Consensus Status...")
-        all_seasons = get_all_seasons_from_scope(data_scope)
+        all_seasons = utils.get_all_seasons_from_scope(data_scope)
         for tour_id, season_list in all_seasons.items():
             for season_id in season_list:
                 utils.check_consensus_status(tour_id, season_id)
@@ -126,7 +121,7 @@ def main():
 
     elif args.command == "scrape-all":
         print("\n🔎 Starting Stage: Scrape All Missing Seasons...")
-        all_seasons = get_all_seasons_from_scope(data_scope)
+        all_seasons = utils.get_all_seasons_from_scope(data_scope)
 
         for tour_id, season_list in all_seasons.items():
             for season_id in season_list:
@@ -143,6 +138,9 @@ def main():
                 utils.run_repair_cycle(tour_id, season_id)
 
         print("✅ Stage Complete.")
+
+    elif args.command == "repair":
+        utils.run_full_repair(data_scope)
 
     print("\n Pipeline execution finished.")
 
