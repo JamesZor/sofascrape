@@ -27,12 +27,19 @@ class ScraperConfig:
 
 
 @dataclass
+class LinksConfig:
+    tournament_empty: str
+    seasons_empty: str
+
+
+@dataclass
 class AppConfig:
     """The master config dataclass"""
 
     database: DataBaseConfig
     pipeline: PipelineConfig
     scraper: ScraperConfig
+    links: LinksConfig
 
 
 def load_config(config_file_name: str = "settings.yaml") -> AppConfig:
@@ -57,6 +64,7 @@ def load_config(config_file_name: str = "settings.yaml") -> AppConfig:
         database=DataBaseConfig(**raw_data.get("database", {})),
         pipeline=PipelineConfig(**raw_data.get("pipeline", {})),
         scraper=ScraperConfig(**raw_data.get("scraper", {})),
+        links=LinksConfig(**raw_data.get("links", {})),
     )
 
 

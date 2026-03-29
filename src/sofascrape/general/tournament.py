@@ -1,12 +1,11 @@
 import logging
 from typing import Dict, Optional
 
-from hydra import compose, initialize
-from omegaconf import DictConfig
 from pydantic import ValidationError
 from webdriver import MyWebDriver
 
 from sofascrape.abstract.base import BaseComponentScraper
+from sofascrape.conf.config import AppConfig
 from sofascrape.schemas.general import TournamentData
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,7 @@ class TournamentComponentScraper(BaseComponentScraper):
         self,
         tournamentid: int,
         webdriver: MyWebDriver,
-        cfg: Optional[DictConfig] = None,
+        cfg: Optional[AppConfig] = None,
     ) -> None:
         """Initialize the tournament scraper.
 
@@ -93,3 +92,55 @@ class TournamentComponentScraper(BaseComponentScraper):
                 f"Unexpected error parsing tournament {self.tournamentid}: {str(e)}"
             )
             raise
+
+
+# %%
+# --- IPython Playground ---
+if __name__ == "__main__":
+    from webdriver import ManagerWebdriver
+
+    from sofascrape.conf.config import load_config
+    from sofascrape.db.manager import DatabaseManager
+    from sofascrape.general.tournament import TournamentComponentScraper
+
+    # 1. Load our new infrastructure
+    config = load_config()
+    db = DatabaseManager(config)
+
+    # 2. Spin up your custom proxy-rotating webdriver
+    print("Spawning Webdriver...")
+    mw = ManagerWebdriver()
+    driver = mw.spawn_webdriver()
+
+    try:
+        # 3. Let's try to scrape the Scottish Premiership (Assuming ID is 36, change if needed!)
+        # Actually, let's use Tournament ID 17 (Premier League) or whatever you know works.
+        target_id = 56
+
+        print(f"Instantiating Scraper for Tournament {target_id}...")
+        scraper = TournamentComponentScraper(
+            tournamentid=target_id, webdriver=driver, cfg=config
+        )
+
+        # 4. Execute the scrape steps
+        scraper.get_data()
+        print("Raw Data Fetched!")
+
+        scraper.parse_data()
+        print("Data Parsed into Pydantic successfully!")
+
+        # Let's look at what we got:
+        tournament_name = scraper.data.tournament.name
+        print(f"\n--- Result ---")
+        print(f"Found Tournament: {tournament_name}")
+        print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
+
+        # 5. Let's test saving it to our brand new Postgres table!
+        print(f"\nSaving {tournament_name} to Postgres database...")
+        db.upsert_tournament(scraper.data)
+        print("Saved successfully!")
+
+    finally:
+        # Always clean up the browser!
+        print("Closing webdriver...")
+        driver.close()

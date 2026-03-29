@@ -11,6 +11,7 @@ from sofascrape.db.models import (
     MatchIncidents,
     MatchLineups,
     MatchStats,
+    Tournament,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,24 @@ class DatabaseManager:
 
             # 'merge' performs an UPSERT (inserts if new, updates if existing)
             session.merge(record)
+            session.commit()
+
+    # FIXME:
+    def upsert_tournament(self, tournament_data: Any) -> None:
+        """Upserts a Tournament into the database."""
+        with self.SessionLocal() as session:
+            # Assuming your Pydantic model has .name and .id or similar
+            # Adjust these fields based on your actual TournamentData schema
+            t = Tournament(
+                tournament_id=tournament_data.tournament.id,
+                name=tournament_data.tournament.name,
+                country=(
+                    tournament_data.tournament.category.name
+                    if hasattr(tournament_data.tournament, "category")
+                    else None
+                ),
+            )
+            session.merge(t)
             session.commit()
 
 
