@@ -1,0 +1,11 @@
+database:
+  url: "postgresql://admin:supersecretpassword@192.168.1.88:5432/sofascrape_db"
+
+pipeline:
+  max_retries: 3                        # How many times to retry QA mismatch or API error 
+  qa_pause_seconds: 2.0                 # How long to sleep between Fetch A and B 
+  batch_size: 50                        # How many matches the orchestractor processes at once
+
+scraper:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  timeout_seconds: 15
