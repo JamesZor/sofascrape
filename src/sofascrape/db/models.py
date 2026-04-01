@@ -103,3 +103,20 @@ if __name__ == "__main__":
     print("Connecting to database and creating tables...")
     Base.metadata.create_all(engine)
     print("Schema creation complete!")
+
+    # ----- Reset the tables, beca
+
+    from sqlalchemy import create_engine
+
+    from sofascrape.conf.config import load_config
+    from sofascrape.db.models import Base
+
+    config = load_config()
+    engine = create_engine(config.database.url, echo=True)
+
+    # 1. Drop EVERYTHING (Say goodbye to our dummy data!)
+    Base.metadata.drop_all(engine)
+
+    # 2. Recreate everything with the new raw_data column
+    Base.metadata.create_all(engine)
+    print("Database schema successfully recreated!")
