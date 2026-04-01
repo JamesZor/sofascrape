@@ -88,13 +88,13 @@ class EventsComponentScraper(BaseComponentScraper):
 if __name__ == "__main__":
     import os
 
-    from webdriver import ManagerWebdriver
-
     os.environ["DISPLAY"] = ":0"
+
+    from webdriver import ManagerWebdriver
 
     from sofascrape.conf.config import load_config
     from sofascrape.db.manager import DatabaseManager
-    from sofascrape.general.tournament import TournamentComponentScraper
+    from sofascrape.general.events import EventsComponentScraper
 
     # 1. Load our new infrastructure
     config = load_config()
@@ -108,11 +108,12 @@ if __name__ == "__main__":
     try:
         # 3. Let's try to scrape the Scottish Premiership (Assuming ID is 36, change if needed!)
         # Actually, let's use Tournament ID 17 (Premier League) or whatever you know works.
+        season_id = 77129
         target_id = 56
 
         print(f"Instantiating Scraper for Tournament {target_id}...")
-        scraper = TournamentComponentScraper(
-            tournamentid=target_id, webdriver=driver, cfg=config
+        scraper = EventsComponentScraper(
+            tournamentid=target_id, season_id=season_id, webdriver=driver, cfg=config
         )
 
         # 4. Execute the scrape steps
