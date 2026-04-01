@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
         print(f"Instantiating Scraper for Tournament {target_id}...")
         scraper = EventsComponentScraper(
-            tournamentid=target_id, season_id=season_id, webdriver=driver, cfg=config
+            tournamentid=target_id, seasonid=season_id, webdriver=driver, cfg=config
         )
 
         # 4. Execute the scrape steps

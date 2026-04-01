@@ -30,7 +30,7 @@ class ScraperConfig:
 class LinksConfig:
     tournament_empty: str
     seasons_empty: str
-    event_season: str
+    events_season_empty: str
 
 
 @dataclass
