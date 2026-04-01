@@ -11,6 +11,7 @@ from sofascrape.db.models import (
     MatchIncidents,
     MatchLineups,
     MatchStats,
+    Season,
     Tournament,
 )
 
@@ -93,7 +94,6 @@ class DatabaseManager:
             session.merge(record)
             session.commit()
 
-    # FIXME:
     def upsert_tournament(self, tournament_data: Any, raw_data: dict = None) -> None:
         """Upserts a Tournament into the database."""
         with self.SessionLocal() as session:
@@ -111,6 +111,27 @@ class DatabaseManager:
                 raw_data=raw_data,
             )
             session.merge(t)
+            session.commit()
+
+    def upsert_seasons(
+        self, tournament_id: int, parsed_seasons: list, raw_season: dict
+    ) -> None:
+        """upserts seasons into the database"""
+
+        with self.SessionLocal() as session:
+
+            for parsed_season, raw_season_dict in zip(parsed_seasons, raw_season):
+
+                s = Season(
+                    season_id=parsed_season.id,
+                    tournament_id=tournament_id,
+                    year=parsed_season.year,
+                    name=parsed_season.name,
+                    raw_data=raw_season_dict,
+                )
+
+                session.merge(s)
+
             session.commit()
 
 

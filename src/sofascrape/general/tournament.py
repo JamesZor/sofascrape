@@ -97,7 +97,11 @@ class TournamentComponentScraper(BaseComponentScraper):
 # %%
 # --- IPython Playground ---
 if __name__ == "__main__":
+    import os
+
     from webdriver import ManagerWebdriver
+
+    os.environ["DISPLAY"] = ":0"
 
     from sofascrape.conf.config import load_config
     from sofascrape.db.manager import DatabaseManager
@@ -137,7 +141,7 @@ if __name__ == "__main__":
 
         # 5. Let's test saving it to our brand new Postgres table!
         print(f"\nSaving {tournament_name} to Postgres database...")
-        db.upsert_tournament(scraper.data)
+        db.upsert_tournament(scraper.data, scraper.raw_data)
         print("Saved successfully!")
 
     finally:

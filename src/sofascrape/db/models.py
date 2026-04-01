@@ -23,6 +23,8 @@ class Season(Base):
     season_id = Column(Integer, primary_key=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     year = Column(String, nullable=False)
+    name = Column(String)
+    raw_data = Column(JSONB)
 
 
 class TournamentSeasonMetadata(Base):
