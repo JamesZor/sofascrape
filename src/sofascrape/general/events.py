@@ -126,8 +126,9 @@ if __name__ == "__main__":
         # Let's look at what we got:
         tournament_name = scraper.data.tournament.name
         print(f"\n--- Result ---")
-        print(f"Found Tournament: {tournament_name}")
-        print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
+        print(
+            scraper.data.events[-1].model_dump_json(indent=6)
+        )  # Pretty print the JSON
 
         # 5. Let's test saving it to our brand new Postgres table!
         print(f"\nSaving {tournament_name} to Postgres database...")

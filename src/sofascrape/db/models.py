@@ -27,6 +27,17 @@ class Season(Base):
     raw_data = Column(JSONB)
 
 
+# TODO:
+class Events(Base):
+    __tablename__ = "Events"
+    tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
+    season_id = Column(Integer, ForeignKey("seasons.season_id"))
+    name = Column(String)
+    status_code = Column(Integer)
+    status_description = Column(String)
+    status_type = Column(String)
+
+
 class TournamentSeasonMetadata(Base):
     __tablename__ = "tournament_season_metadata"
     tournament_id = Column(
