@@ -13,7 +13,9 @@ class Tournament(Base):
     __tablename__ = "tournaments"
     tournament_id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False)
+    sport = Column(String)
     country = Column(String)
+    raw_data = Column(JSONB)
 
 
 class Season(Base):

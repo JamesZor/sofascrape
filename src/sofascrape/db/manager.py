@@ -94,7 +94,7 @@ class DatabaseManager:
             session.commit()
 
     # FIXME:
-    def upsert_tournament(self, tournament_data: Any) -> None:
+    def upsert_tournament(self, tournament_data: Any, raw_data: dict = None) -> None:
         """Upserts a Tournament into the database."""
         with self.SessionLocal() as session:
             # Assuming your Pydantic model has .name and .id or similar
@@ -102,11 +102,13 @@ class DatabaseManager:
             t = Tournament(
                 tournament_id=tournament_data.tournament.id,
                 name=tournament_data.tournament.name,
+                sport=tournament_data.tournament.category.sport.slug,
                 country=(
                     tournament_data.tournament.category.name
                     if hasattr(tournament_data.tournament, "category")
                     else None
                 ),
+                raw_data=raw_data,
             )
             session.merge(t)
             session.commit()
