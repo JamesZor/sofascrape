@@ -74,25 +74,17 @@ class MatchComponentAudit(Base):
 # --- The Golden Data Sink ---
 
 
-# TODO:
+# TODO: Columns have been defined, sort the upsert
 class Match(Base):
     __tablename__ = "matches"
-    match_id = Column(Integer, primary_key=True)
-    season_id = Column(Integer, ForeignKey("seasons.season_id"))
-    start_timestamp = Column(DateTime)
-    home_team = Column(String)
-    away_team = Column(String)
-    home_score = Column(Integer)
-    away_score = Column(Integer)
-
     id = Column(Integer, primary_key=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     season_id = Column(Integer, ForeignKey("seasons.season_id"))
     name = Column(String)
+    start_timestamp = Column(DateTime(timezone=True))
     home_team = Column(String, nullable=False)
     away_team = Column(String, nullable=False)
     status_type = Column(String)
-    start_timestamp = Column(Integer)
     injury_time1 = Column(Integer)
     injury_time2 = Column(Integer)
     home_score_ht = Column(Integer)
@@ -101,10 +93,12 @@ class Match(Base):
     away_score = Column(Integer)
     round = Column(Integer)
     winner_code = Column(Integer)
-    hasGlobalHighlights = Column(Boolean)
-    hasXg = Column(Boolean)
-    hasEventPlayerStatistics = Column(Boolean)
-    hasEventPlayerHeatMap = Column(Boolean)
+    mananger_home = Column(String)
+    mananger_away = Column(String)
+    venue_name_home = Column(String)
+    venue_name_away = Column(String)
+    venue_city_home = Column(String)
+    venue_city_away = Column(String)
     raw_data = Column(JSONB)
 
 

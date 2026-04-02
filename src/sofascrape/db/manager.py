@@ -15,9 +15,11 @@ from sofascrape.db.models import (
     Season,
     Tournament,
 )
-from sofascrape.schemas.general import EventSchema, SeasonSchema
+from sofascrape.schemas.general import EventSchema, FootballEventSchema, SeasonSchema
 
 logger = logging.getLogger(__name__)
+
+# --- Helper functions ---
 
 
 def safe_get(obj, *attrs, default=None):
@@ -28,6 +30,16 @@ def safe_get(obj, *attrs, default=None):
         # Move one level deeper
         obj = getattr(obj, attr, default)
     return obj
+
+
+def parse_unix_timestamp(ts: Optional[int]) -> Optional[datetime.datetime]:
+    """Converts a Unix epoch integer to a timezone-aware UTC datetime."""
+    if not ts:
+        return None
+    return datetime.datetime.fromtimestamp(ts, tz=datetime.timezone.utc)
+
+
+# --- Main ----
 
 
 class DatabaseManager:
@@ -174,4 +186,46 @@ class DatabaseManager:
 
                 session.merge(ev)
             # finished the zip loop
+            session.commit()
+
+    # TODO::
+    def upsert_match(
+        self, match_id: int, parsed_match: FootballEventSchema, raw: dict
+    ) -> None:
+        """Upserts a Match into the database."""
+
+        with self.SessionLocal() as session:
+            event = getattr(parsed_match, "event", parsed_match)
+
+            match_record = Match(
+                id=match_id,
+                tournament_id=safe_get(event, "tournament", "id"),
+                season_id=safe_get(event, "season", "id"),
+                name=safe_get(event, "slug"),
+                # Wrapped safely in our new DRY helper!
+                start_timestamp=parse_unix_timestamp(safe_get(event, "startTimestamp")),
+                home_team=safe_get(event, "homeTeam", "slug"),
+                away_team=safe_get(event, "awayTeam", "slug"),
+                status_type=safe_get(event, "status", "type"),
+                # Time / Score logic
+                injury_time1=safe_get(event, "time", "injuryTime1", default=0),
+                injury_time2=safe_get(event, "time", "injuryTime2", default=0),
+                home_score_ht=safe_get(event, "homeScore", "period1"),
+                home_score=safe_get(event, "homeScore", "current"),
+                away_score_ht=safe_get(event, "awayScore", "period1"),
+                away_score=safe_get(event, "awayScore", "current"),
+                # Match Info
+                round=safe_get(event, "roundInfo", "round"),
+                winner_code=safe_get(event, "winnerCode"),
+                # Extracted Nested Details
+                mananger_home=safe_get(event, "homeTeam", "manager", "name"),
+                mananger_away=safe_get(event, "awayTeam", "manager", "name"),
+                venue_name_home=safe_get(event, "homeTeam", "venue", "name"),
+                venue_name_away=safe_get(event, "awayTeam", "venue", "name"),
+                venue_city_home=safe_get(event, "homeTeam", "venue", "city", "name"),
+                venue_city_away=safe_get(event, "awayTeam", "venue", "city", "name"),
+                raw_data=raw,
+            )
+
+            session.merge(match_record)
             session.commit()

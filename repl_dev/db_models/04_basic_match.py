@@ -1,3 +1,5 @@
+# repl dev eviroment
+
 import os
 
 os.environ["DISPLAY"] = ":0"
@@ -35,12 +37,9 @@ print(f"\n--- Result ---")
 print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
 
 # 5. Let's test saving it to our brand new Postgres table!
-
-db.upsert_events(
-    scraper.tournamentid,
-    scraper.data.events,
-    scraper.raw_data.get("events", []),
-)
+# TODO: create this functions
+    db.upsert_(
+    )
 
 # Always clean up the browser!
 print("Closing webdriver...")
@@ -48,6 +47,8 @@ driver.close()
 
 
 """
+Exmaple:
+FootballEventSchema
 {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
       "event": {
             "slug": "cove-rangers-stenhousemuir",
