@@ -60,6 +60,7 @@ class Events(Base):
     hasXg = Column(Boolean)
     hasEventPlayerStatistics = Column(Boolean)
     hasEventPlayerHeatMap = Column(Boolean)
+    raw_data = Column(JSONB)
 
 
 class TournamentSeasonMetadata(Base):
