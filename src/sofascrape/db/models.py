@@ -40,6 +40,7 @@ class Season(Base):
 # TODO:
 class Events(Base):
     __tablename__ = "Events"
+    id = Column(Integer, primary_key=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     season_id = Column(Integer, ForeignKey("seasons.season_id"))
     name = Column(String)

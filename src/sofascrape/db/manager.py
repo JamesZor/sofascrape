@@ -146,6 +146,7 @@ class DatabaseManager:
         with self.SessionLocal() as session:
             for parsed_event, raw_event in zip(parsed_events, raw_event):
                 ev = Events(
+                    id=parsed_event.id,
                     tournament_id=tournament_id,
                     season_id=parsed_event.session.id,
                     name=parsed_event.slug,
