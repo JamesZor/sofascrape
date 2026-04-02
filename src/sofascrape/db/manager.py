@@ -148,7 +148,7 @@ class DatabaseManager:
                 ev = Events(
                     id=parsed_event.id,
                     tournament_id=tournament_id,
-                    season_id=parsed_event.session.id,
+                    season_id=parsed_event.season.id,
                     name=parsed_event.slug,
                     home_team=parsed_event.home_team.slug,
                     away_team=parsed_event.away_time.slug,

@@ -17,44 +17,41 @@ print("Spawning Webdriver...")
 mw = ManagerWebdriver()
 driver = mw.spawn_webdriver()
 
-try:
-    # 3. Let's try to scrape the Scottish Premiership (Assuming ID is 36, change if needed!)
-    # Actually, let's use Tournament ID 17 (Premier League) or whatever you know works.
-    season_id = 77129
-    target_id = 56
+# 3. Let's try to scrape the Scottish Premiership (Assuming ID is 36, change if needed!)
+# Actually, let's use Tournament ID 17 (Premier League) or whatever you know works.
+season_id = 77129
+target_id = 56
 
-    season_id = 77128
-    target_id = 54
+# season_id = 77128
+# target_id = 54
+#
+print(f"Instantiating Scraper for Tournament {target_id}...")
+scraper = EventsComponentScraper(
+    tournamentid=target_id, seasonid=season_id, webdriver=driver, cfg=config
+)
 
-    print(f"Instantiating Scraper for Tournament {target_id}...")
-    scraper = EventsComponentScraper(
-        tournamentid=target_id, seasonid=season_id, webdriver=driver, cfg=config
-    )
+# 4. Execute the scrape steps
+scraper.get_data()
+print("Raw Data Fetched!")
 
-    # 4. Execute the scrape steps
-    scraper.get_data()
-    print("Raw Data Fetched!")
+scraper.parse_data()
+print("Data Parsed into Pydantic successfully!")
 
-    scraper.parse_data()
-    print("Data Parsed into Pydantic successfully!")
+# Let's look at what we got:
+print(f"\n--- Result ---")
+print(scraper.data.events[20].model_dump_json(indent=6))  # Pretty print the JSON
 
-    # Let's look at what we got:
-    print(f"\n--- Result ---")
-    print(scraper.data.events[20].model_dump_json(indent=6))  # Pretty print the JSON
+# 5. Let's test saving it to our brand new Postgres table!
 
-    # 5. Let's test saving it to our brand new Postgres table!
+db.upsert_events(
+    scraper.tournamentid,
+    scraper.data.events,
+    scraper.raw_data.get("events", []),
+)
 
-    db.upsert_events(
-        scraper.tournamentid,
-        scraper.data.events,
-        scraper.raw_data.get("events", []),
-    )
-
-
-finally:
-    # Always clean up the browser!
-    print("Closing webdriver...")
-    driver.close()
+# Always clean up the browser!
+print("Closing webdriver...")
+driver.close()
 
 
 """
