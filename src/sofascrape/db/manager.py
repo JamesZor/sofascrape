@@ -20,6 +20,16 @@ from sofascrape.schemas.general import EventSchema, SeasonSchema
 logger = logging.getLogger(__name__)
 
 
+def safe_get(obj, *attrs, default=None):
+    """Safely fetch nested attributes without throwing NoneType errors."""
+    for attr in attrs:
+        if obj is None:
+            return default
+        # Move one level deeper
+        obj = getattr(obj, attr, default)
+    return obj
+
+
 class DatabaseManager:
     def __init__(self, config: AppConfig):
         # Create the connection pool
@@ -154,8 +164,8 @@ class DatabaseManager:
                     away_team=parsed_event.awayTeam.slug,
                     status_type=parsed_event.status.type,
                     start_timestamp=parsed_event.startTimestamp,
-                    injury_time1=parsed_event.time.injuryTime1,
-                    injury_time2=parsed_event.time.injuryTime2,
+                    injury_time1=safe_get(parsed_event, "time", "injuryTime1"),
+                    injury_time2=safe_get(parsed_event, "time", "injuryTime2"),
                     home_score_ht=parsed_event.homeScore.period1,
                     home_score=parsed_event.homeScore.display,
                     away_score_ht=parsed_event.homeScore.period1,
