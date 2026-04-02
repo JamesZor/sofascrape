@@ -15,7 +15,13 @@ from sofascrape.db.models import (
     Season,
     Tournament,
 )
-from sofascrape.schemas.general import EventSchema, FootballEventSchema, SeasonSchema
+from sofascrape.schemas.general import (
+    EventSchema,
+    FootballEventSchema,
+    MatchPlayerLineup,
+    SeasonSchema,
+    TeamLineupSchema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,73 +56,6 @@ class DatabaseManager:
         self.SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self.engine
         )
-
-    def get_pending_tasks(self, limit: int = 50) -> List[MatchComponentAudit]:
-        """Fetches a batch of pending or retryable tasks from the queue."""
-        with self.SessionLocal() as session:
-            # We want tasks that are PENDING, or QA_MISMATCH/API_ERROR that haven't hit the retry limit
-            stmt = (
-                select(MatchComponentAudit)
-                .where(
-                    MatchComponentAudit.status.in_(
-                        ["PENDING", "QA_MISMATCH", "API_ERROR"]
-                    ),
-                    MatchComponentAudit.retry_count
-                    < 3,  # Hardcoded for now, could use config
-                )
-                .limit(limit)
-            )
-
-            # session.scalars() unpacks the SQLAlchemy rows into actual Python objects
-            results = session.scalars(stmt).all()
-            return results
-
-    def update_task_status(
-        self,
-        audit_id: int,
-        status: str,
-        error_message: Optional[str] = None,
-        increment_retry: bool = False,
-    ) -> None:
-        """Updates the state of a specific task."""
-        with self.SessionLocal() as session:
-            task = session.get(MatchComponentAudit, audit_id)
-            if not task:
-                return
-
-            task.status = status
-            if error_message:
-                task.error_message = error_message
-            if increment_retry:
-                task.retry_count += 1
-
-            session.commit()
-
-    def save_component_data(
-        self, match_id: int, component_name: str, pydantic_data: Any
-    ) -> None:
-        """Saves the dumped Pydantic JSON to the correct table."""
-        with self.SessionLocal() as session:
-            # Pydantic v2 uses model_dump(mode='json'), v1 uses dict().
-            # This ensures we get a JSON-safe dictionary.
-            json_data = (
-                pydantic_data.model_dump(mode="json")
-                if hasattr(pydantic_data, "model_dump")
-                else pydantic_data.dict()
-            )
-
-            if component_name == "stats":
-                record = MatchStats(match_id=match_id, data=json_data)
-            elif component_name == "lineups":
-                record = MatchLineups(match_id=match_id, data=json_data)
-            elif component_name == "incidents":
-                record = MatchIncidents(match_id=match_id, data=json_data)
-            else:
-                raise ValueError(f"Unknown component: {component_name}")
-
-            # 'merge' performs an UPSERT (inserts if new, updates if existing)
-            session.merge(record)
-            session.commit()
 
     def upsert_tournament(self, tournament_data: Any, raw_data: dict = None) -> None:
         """Upserts a Tournament into the database."""
@@ -229,3 +168,130 @@ class DatabaseManager:
 
             session.merge(match_record)
             session.commit()
+
+    def upsert_match_lineup(
+        self, match_id: int, parsed_lineup: FootballLineupSchema
+    ) -> None:
+        """Upserts all players from a match lineup into the database."""
+
+        with self.SessionLocal() as session:
+
+            def process_team(team_data: TeamLineupSchema, is_home: bool):
+                """Helper to iterate through a team's players and stage them for upsert."""
+                # Use getattr safely in case team_data is None or missing players
+                players = getattr(team_data, "players", []) if team_data else []
+
+                for entry in players:
+                    player_info = entry.player
+                    stats = entry.statistics
+
+                    # Dump the specific stats payload to a dict for the JSONB column
+                    stats_dict = {}
+                    if stats:
+                        stats_dict = (
+                            stats.model_dump(mode="json", exclude_none=True)
+                            if hasattr(stats, "model_dump")
+                            else stats.dict(exclude_none=True)
+                        )
+
+                    record = MatchPlayerLineup(
+                        match_id=match_id,
+                        player_id=player_info.id,
+                        team_id=entry.teamId,
+                        is_home_team=is_home,
+                        player_name=player_info.name,
+                        player_slug=player_info.slug,
+                        position=entry.position or player_info.position,
+                        shirt_number=entry.shirtNumber,
+                        jersey_number=entry.jerseyNumber or player_info.jerseyNumber,
+                        substitute=entry.substitute,
+                        captain=entry.captain,
+                        # Core stats pulled to top-level columns
+                        minutes_played=safe_get(stats, "minutesPlayed", default=0),
+                        rating=safe_get(stats, "rating"),
+                        goals=safe_get(stats, "goals", default=0),
+                        expected_goals=safe_get(stats, "expectedGoals"),
+                        expected_assists=safe_get(stats, "expectedAssists"),
+                        # The rest of the stats go here
+                        statistics=stats_dict,
+                    )
+
+                    # Merge (Upsert) the specific player row
+                    session.merge(record)
+
+            # 1. Process Home Team
+            process_team(parsed_lineup.home, is_home=True)
+
+            # 2. Process Away Team
+            process_team(parsed_lineup.away, is_home=False)
+
+            # 3. Commit the transaction for the entire match lineup
+            session.commit()
+
+    # def get_pending_tasks(self, limit: int = 50) -> List[MatchComponentAudit]:
+    #     """Fetches a batch of pending or retryable tasks from the queue."""
+    #     with self.SessionLocal() as session:
+    #         # We want tasks that are PENDING, or QA_MISMATCH/API_ERROR that haven't hit the retry limit
+    #         stmt = (
+    #             select(MatchComponentAudit)
+    #             .where(
+    #                 MatchComponentAudit.status.in_(
+    #                     ["PENDING", "QA_MISMATCH", "API_ERROR"]
+    #                 ),
+    #                 MatchComponentAudit.retry_count
+    #                 < 3,  # Hardcoded for now, could use config
+    #             )
+    #             .limit(limit)
+    #         )
+    #
+    #         # session.scalars() unpacks the SQLAlchemy rows into actual Python objects
+    #         results = session.scalars(stmt).all()
+    #         return results
+    #
+    # def update_task_status(
+    #     self,
+    #     audit_id: int,
+    #     status: str,
+    #     error_message: Optional[str] = None,
+    #     increment_retry: bool = False,
+    # ) -> None:
+    #     """Updates the state of a specific task."""
+    #     with self.SessionLocal() as session:
+    #         task = session.get(MatchComponentAudit, audit_id)
+    #         if not task:
+    #             return
+    #
+    #         task.status = status
+    #         if error_message:
+    #             task.error_message = error_message
+    #         if increment_retry:
+    #             task.retry_count += 1
+    #
+    #         session.commit()
+    #
+    # def save_component_data(
+    #     self, match_id: int, component_name: str, pydantic_data: Any
+    # ) -> None:
+    #     """Saves the dumped Pydantic JSON to the correct table."""
+    #     with self.SessionLocal() as session:
+    #         # Pydantic v2 uses model_dump(mode='json'), v1 uses dict().
+    #         # This ensures we get a JSON-safe dictionary.
+    #         json_data = (
+    #             pydantic_data.model_dump(mode="json")
+    #             if hasattr(pydantic_data, "model_dump")
+    #             else pydantic_data.dict()
+    #         )
+    #
+    #         if component_name == "stats":
+    #             record = MatchStats(match_id=match_id, data=json_data)
+    #         elif component_name == "lineups":
+    #             record = MatchLineups(match_id=match_id, data=json_data)
+    #         elif component_name == "incidents":
+    #             record = MatchIncidents(match_id=match_id, data=json_data)
+    #         else:
+    #             raise ValueError(f"Unknown component: {component_name}")
+    #
+    #         # 'merge' performs an UPSERT (inserts if new, updates if existing)
+    #         session.merge(record)
+    #         session.commit()
+    #

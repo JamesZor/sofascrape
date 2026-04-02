@@ -6,6 +6,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -105,13 +106,39 @@ class Match(Base):
 class MatchStats(Base):
     __tablename__ = "match_stats"
     match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
-    data = Column(JSONB)  # This is where your Pydantic model gets dumped!
-
-
-class MatchLineups(Base):
-    __tablename__ = "match_lineups"
-    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
     data = Column(JSONB)
+
+
+class MatchPlayerLineup(Base):
+    __tablename__ = "match_player_lineups"
+
+    # Composite Primary Key: A specific player in a specific match
+    match_id = Column(Integer, ForeignKey("matches.id"), primary_key=True)
+    player_id = Column(Integer, primary_key=True)
+
+    # Team Info
+    team_id = Column(Integer, nullable=False)
+    is_home_team = Column(Boolean, nullable=False)
+
+    # Player Info
+    player_name = Column(String, nullable=False)
+    player_slug = Column(String)
+    position = Column(String)
+    shirt_number = Column(Integer)
+    jersey_number = Column(String)
+
+    # Match Status
+    substitute = Column(Boolean)
+    captain = Column(Boolean)
+
+    minutes_played = Column(Integer)
+    rating = Column(Float)
+    goals = Column(Integer)
+    expected_goals = Column(Float)
+    expected_assists = Column(Float)
+
+    # Detailed Stats (Keeps the table clean while retaining everything)
+    statistics = Column(JSONB)
 
 
 class MatchIncidents(Base):
