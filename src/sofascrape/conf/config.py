@@ -31,6 +31,14 @@ class LinksConfig:
     tournament_empty: str
     seasons_empty: str
     events_season_empty: str
+    # football match
+    football_base_match: str
+    football_stats: str
+    football_lineup: str
+    football_incidents: str
+    football_graph: str
+    football_heatmap: str
+    football_odds: str
 
 
 @dataclass

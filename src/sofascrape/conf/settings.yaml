@@ -10,6 +10,15 @@ links:
   tournament_empty: "https://api.sofascore.com/api/v1/tournament/{tournamentID}"
   seasons_empty : "https://api.sofascore.com/api/v1/tournament/{tournamentID}/seasons"
   events_season_empty: "https://api.sofascore.com/api/v1/tournament/{tournamentID}/season/{seasonID}/events"
+  # football match 
+  football_base_match: "https://api.sofascore.com/api/v1/event/{match_id}"
+  football_stats: "https://api.sofascore.com/api/v1/event/{match_id}/statistics"
+  football_lineup: "https://api.sofascore.com/api/v1/event/{match_id}/lineups"
+  football_incidents: "https://api.sofascore.com/api/v1/event/{match_id}/incidents"
+  football_graph: "https://api.sofascore.com/api/v1/event/{match_id}/graph"
+  football_heatmap: "https://api.sofascore.com/api/v1/event/{match_id}/player/{player_id}/heatmap"
+  football_odds: "https://api.sofascore.com/api/v1/event/{match_id}/odds/1/all"
+
 
 scraper:
   user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"

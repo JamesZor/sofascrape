@@ -37,9 +37,8 @@ class Season(Base):
     raw_data = Column(JSONB)
 
 
-# TODO:
 class Events(Base):
-    __tablename__ = "Events"
+    __tablename__ = "events"
     id = Column(Integer, primary_key=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     season_id = Column(Integer, ForeignKey("seasons.season_id"))
@@ -61,17 +60,6 @@ class Events(Base):
     hasEventPlayerStatistics = Column(Boolean)
     hasEventPlayerHeatMap = Column(Boolean)
     raw_data = Column(JSONB)
-
-
-class TournamentSeasonMetadata(Base):
-    __tablename__ = "tournament_season_metadata"
-    tournament_id = Column(
-        Integer, ForeignKey("tournaments.tournament_id"), primary_key=True
-    )
-    season_id = Column(Integer, ForeignKey("seasons.season_id"), primary_key=True)
-    has_stats = Column(Boolean, default=True)
-    has_incidents = Column(Boolean, default=True)
-    has_lineups = Column(Boolean, default=True)
 
 
 # --- The State Machine (Queue) ---
