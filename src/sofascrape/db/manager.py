@@ -10,7 +10,7 @@ from sofascrape.db.models import (
     Match,
     MatchComponentAudit,
     MatchIncidents,
-    MatchLineups,
+    MatchPlayerLineups,
     MatchStats,
     Season,
     Tournament,
@@ -18,6 +18,7 @@ from sofascrape.db.models import (
 from sofascrape.schemas.general import (
     EventSchema,
     FootballEventSchema,
+    FootballLineupSchema,
     MatchPlayerLineup,
     SeasonSchema,
     TeamLineupSchema,
