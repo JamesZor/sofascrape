@@ -43,18 +43,11 @@ class Events(Base):
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     season_id = Column(Integer, ForeignKey("seasons.season_id"))
     name = Column(String)
+    round = Column(Integer)
     home_team = Column(String, nullable=False)
     away_team = Column(String, nullable=False)
     status_type = Column(String)
     start_timestamp = Column(Integer)
-    injury_time1 = Column(Integer)
-    injury_time2 = Column(Integer)
-    home_score_ht = Column(Integer)
-    home_score = Column(Integer)
-    away_score_ht = Column(Integer)
-    away_score = Column(Integer)
-    round = Column(Integer)
-    winner_code = Column(Integer)
     hasGlobalHighlights = Column(Boolean)
     hasXg = Column(Boolean)
     hasEventPlayerStatistics = Column(Boolean)
@@ -81,6 +74,7 @@ class MatchComponentAudit(Base):
 # --- The Golden Data Sink ---
 
 
+# TODO:
 class Match(Base):
     __tablename__ = "matches"
     match_id = Column(Integer, primary_key=True)
@@ -90,6 +84,28 @@ class Match(Base):
     away_team = Column(String)
     home_score = Column(Integer)
     away_score = Column(Integer)
+
+    id = Column(Integer, primary_key=True)
+    tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
+    season_id = Column(Integer, ForeignKey("seasons.season_id"))
+    name = Column(String)
+    home_team = Column(String, nullable=False)
+    away_team = Column(String, nullable=False)
+    status_type = Column(String)
+    start_timestamp = Column(Integer)
+    injury_time1 = Column(Integer)
+    injury_time2 = Column(Integer)
+    home_score_ht = Column(Integer)
+    home_score = Column(Integer)
+    away_score_ht = Column(Integer)
+    away_score = Column(Integer)
+    round = Column(Integer)
+    winner_code = Column(Integer)
+    hasGlobalHighlights = Column(Boolean)
+    hasXg = Column(Boolean)
+    hasEventPlayerStatistics = Column(Boolean)
+    hasEventPlayerHeatMap = Column(Boolean)
+    raw_data = Column(JSONB)
 
 
 class MatchStats(Base):
