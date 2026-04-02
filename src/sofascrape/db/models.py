@@ -2,7 +2,15 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -47,10 +55,10 @@ class Events(Base):
     away_score = Column(Integer)
     round = Column(Integer)
     winner_code = Column(Integer)
-    hasGlobalHighlights = Column(bool)
-    hasXg = Column(bool)
-    hasEventPlayerStatistics = Column(bool)
-    hasEventPlayerHeatMap = Column(bool)
+    hasGlobalHighlights = Column(Boolean)
+    hasXg = Column(Boolean)
+    hasEventPlayerStatistics = Column(Boolean)
+    hasEventPlayerHeatMap = Column(Boolean)
 
 
 class TournamentSeasonMetadata(Base):

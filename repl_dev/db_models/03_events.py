@@ -40,11 +40,16 @@ try:
 
     # Let's look at what we got:
     print(f"\n--- Result ---")
-    print(scraper.data.events[1].model_dump_json(indent=6))  # Pretty print the JSON
+    print(scraper.data.events[20].model_dump_json(indent=6))  # Pretty print the JSON
 
     # 5. Let's test saving it to our brand new Postgres table!
-    # db.upsert_tournament(scraper.data, scraper.raw_data)
-    # print("Saved successfully!")
+
+    db.upsert_events(
+        scraper.tournamentid,
+        scraper.data.events,
+        scraper.raw_data.get("events", []),
+    )
+
 
 finally:
     # Always clean up the browser!
