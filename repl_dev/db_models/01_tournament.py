@@ -19,7 +19,7 @@ driver = mw.spawn_webdriver()
 
 # 3. Let's try to scrape the Scottish Premiership (Assuming ID is 36, change if needed!)
 # Actually, let's use Tournament ID 17 (Premier League) or whatever you know works.
-target_id = 54
+target_id = 56
 
 print(f"Instantiating Scraper for Tournament {target_id}...")
 scraper = TournamentComponentScraper(

@@ -8,10 +8,7 @@ from sofascrape.conf.config import AppConfig
 from sofascrape.db.models import (
     Events,
     Match,
-    MatchComponentAudit,
-    MatchIncidents,
     MatchPlayerLineup,
-    MatchStats,
     Season,
     Tournament,
 )
@@ -19,7 +16,6 @@ from sofascrape.schemas.general import (
     EventSchema,
     FootballEventSchema,
     FootballLineupSchema,
-    MatchPlayerLineup,
     SeasonSchema,
     TeamLineupSchema,
 )
@@ -128,7 +124,6 @@ class DatabaseManager:
             # finished the zip loop
             session.commit()
 
-    # TODO::
     def upsert_match(
         self, match_id: int, parsed_match: FootballEventSchema, raw: dict
     ) -> None:
@@ -170,6 +165,7 @@ class DatabaseManager:
             session.merge(match_record)
             session.commit()
 
+    # TODO: Current wip
     def upsert_match_lineup(
         self, match_id: int, parsed_lineup: FootballLineupSchema
     ) -> None:
