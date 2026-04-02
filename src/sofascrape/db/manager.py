@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from sofascrape.conf.config import AppConfig
 from sofascrape.db.models import (
+    Events,
     Match,
     MatchComponentAudit,
     MatchIncidents,
@@ -14,6 +15,7 @@ from sofascrape.db.models import (
     Season,
     Tournament,
 )
+from sofascrape.schemas.general import EventSchema, SeasonSchema
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +116,7 @@ class DatabaseManager:
             session.commit()
 
     def upsert_seasons(
-        self, tournament_id: int, parsed_seasons: list, raw_season: dict
+        self, tournament_id: int, parsed_seasons: list[SeasonSchema], raw_season: dict
     ) -> None:
         """upserts seasons into the database"""
 
@@ -134,41 +136,38 @@ class DatabaseManager:
 
             session.commit()
 
+    def upsert_events(
+        self,
+        tournament_id: int,
+        parsed_events: list[EventSchema],
+        raw_event: list[dict],
+    ) -> None:
 
-# %%
-# --- IPython Playground ---
-if __name__ == "__main__":
-    from sofascrape.conf.config import load_config
-    from sofascrape.db.manager import DatabaseManager
-    from sofascrape.db.models import Match, MatchComponentAudit
+        with self.SessionLocal() as session:
+            for parsed_event, raw_event in zip(parsed_events, raw_event):
+                ev = Events(
+                    tournament_id=tournament_id,
+                    season_id=parsed_event.session.id,
+                    name=parsed_event.slug,
+                    home_team=parsed_event.home_team.slug,
+                    away_team=parsed_event.away_time.slug,
+                    status_type=parsed_event.status.type,
+                    start_timestamp=parsed_event.startTimestamp,
+                    injury_time1=parsed_event.time.injuryTime1,
+                    injury_time2=parsed_event.time.injuryTime2,
+                    home_score_ht=parsed_event.homeScore.period1,
+                    home_score=parsed_event.homeScore.display,
+                    away_score_ht=parsed_event.homeScore.period1,
+                    away_score=parsed_event.homeScore.display,
+                    round=parsed_event.roundInfo.round,
+                    winner_code=parsed_event.winnerCode,
+                    hasGlobalHighlights=parsed_event.hasGlobalHighlights,
+                    hasXg=parsed_event.hasXg,
+                    hasEventPlayerStatistics=parsed_event.hasEventPlayerStatistics,
+                    hasEventPlayerHeatMap=parsed_event.hasEventPlayerStatistics,
+                    raw_data=raw_event,
+                )
 
-    config = load_config()
-    db = DatabaseManager(config)
-
-    # 1. Let's manually create a fake match and a pending task to test the logic
-    with db.SessionLocal() as session:
-        # Make a dummy match
-        dummy_match = Match(match_id=99999, home_team="Celtic", away_team="Rangers")
-        session.merge(dummy_match)
-
-        # Make a dummy task
-        dummy_task = MatchComponentAudit(
-            match_id=99999, component_name="stats", status="PENDING"
-        )
-        session.add(dummy_task)
-        session.commit()
-
-    # 2. Test our new manager method!
-    tasks = db.get_pending_tasks(limit=5)
-    for t in tasks:
-        print(
-            f"Found Task - ID: {t.audit_id}, Match: {t.match_id}, Component: {t.component_name}, Status: {t.status}"
-        )
-
-    # 3. Test updating the status
-    if tasks:
-        first_task = tasks[0]
-        db.update_task_status(first_task.audit_id, status="SUCCESS")
-        print(f"Updated task {first_task.audit_id} to SUCCESS!")
-
-#
+                session.merge(ev)
+            # finished the zip loop
+            session.commit()

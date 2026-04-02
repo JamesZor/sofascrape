@@ -1,3 +1,5 @@
+# src/sofascrape/db/models.py
+
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
@@ -33,9 +35,22 @@ class Events(Base):
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     season_id = Column(Integer, ForeignKey("seasons.season_id"))
     name = Column(String)
-    status_code = Column(Integer)
-    status_description = Column(String)
+    home_team = Column(String, nullable=False)
+    away_team = Column(String, nullable=False)
     status_type = Column(String)
+    start_timestamp = Column(Integer)
+    injury_time1 = Column(Integer)
+    injury_time2 = Column(Integer)
+    home_score_ht = Column(Integer)
+    home_score = Column(Integer)
+    away_score_ht = Column(Integer)
+    away_score = Column(Integer)
+    round = Column(Integer)
+    winner_code = Column(Integer)
+    hasGlobalHighlights = Column(bool)
+    hasXg = Column(bool)
+    hasEventPlayerStatistics = Column(bool)
+    hasEventPlayerHeatMap = Column(bool)
 
 
 class TournamentSeasonMetadata(Base):
@@ -95,41 +110,3 @@ class MatchIncidents(Base):
     __tablename__ = "match_incidents"
     match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
     data = Column(JSONB)
-
-
-# %%
-# --- IPython Playground ---
-if __name__ == "__main__":
-    from sqlalchemy import create_engine
-
-    from sofascrape.conf.config import load_config
-    from sofascrape.db.models import Base
-
-    # 1. Load the config we made in Phase 1
-    config = load_config()
-
-    # 2. Create the SQLAlchemy Engine (the actual connection to Postgres)
-    # We set echo=True so you can watch it generate the raw SQL!
-    engine = create_engine(config.database.url, echo=True)
-
-    # 3. Build the schema
-    print("Connecting to database and creating tables...")
-    Base.metadata.create_all(engine)
-    print("Schema creation complete!")
-
-    # ----- Reset the tables, beca
-
-    from sqlalchemy import create_engine
-
-    from sofascrape.conf.config import load_config
-    from sofascrape.db.models import Base
-
-    config = load_config()
-    engine = create_engine(config.database.url, echo=True)
-
-    # 1. Drop EVERYTHING (Say goodbye to our dummy data!)
-    Base.metadata.drop_all(engine)
-
-    # 2. Recreate everything with the new raw_data column
-    Base.metadata.create_all(engine)
-    print("Database schema successfully recreated!")
