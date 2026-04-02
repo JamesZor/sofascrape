@@ -31,3 +31,6 @@ Base.metadata.drop_all(engine)
 # 2. Recreate everything with the new raw_data column
 Base.metadata.create_all(engine)
 print("Database schema successfully recreated!")
+
+
+# --- Nuclear options ---

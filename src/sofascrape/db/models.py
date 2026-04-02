@@ -113,7 +113,7 @@ class MatchPlayerLineup(Base):
     __tablename__ = "match_player_lineups"
 
     # Composite Primary Key: A specific player in a specific match
-    match_id = Column(Integer, ForeignKey("matches.id"), primary_key=True)
+    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
     player_id = Column(Integer, primary_key=True)
 
     # Team Info
