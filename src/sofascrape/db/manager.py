@@ -10,7 +10,7 @@ from sofascrape.db.models import (
     Match,
     MatchComponentAudit,
     MatchIncidents,
-    MatchPlayerLineups,
+    MatchPlayerLineup,
     MatchStats,
     Season,
     Tournament,
