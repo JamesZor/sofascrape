@@ -134,7 +134,7 @@ class DatabaseManager:
             event = getattr(parsed_match, "event", parsed_match)
 
             match_record = Match(
-                id=match_id,
+                match_id=match_id,
                 tournament_id=safe_get(event, "tournament", "id"),
                 season_id=safe_get(event, "season", "id"),
                 name=safe_get(event, "slug"),
