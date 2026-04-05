@@ -1,7 +1,7 @@
 import logging
+from datetime import datetime
 from typing import Any, List, Optional
 
-from datatime import datetime
 from sqlalchemy import create_engine, select, update
 from sqlalchemy.orm import Session, sessionmaker
 

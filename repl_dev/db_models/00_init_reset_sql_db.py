@@ -34,3 +34,29 @@ print("Database schema successfully recreated!")
 
 
 # --- Nuclear options ---
+from sqlalchemy import create_engine, text
+
+from sofascrape.conf.config import load_config
+from sofascrape.db.models import Base
+
+config = load_config()
+engine = create_engine(config.database.url, echo=True)
+
+print("Nuking the old database schema...")
+
+# 1. The Postgres Nuclear Option
+with engine.connect() as conn:
+    # Force drop everything in the public schema (tables, types, constraints, etc.)
+    conn.execute(text("DROP SCHEMA public CASCADE;"))
+
+    # Recreate the empty public schema
+    conn.execute(text("CREATE SCHEMA public;"))
+
+    # In SQLAlchemy 2.0, you must explicitly commit these changes
+    conn.commit()
+
+# 2. Recreate everything based on your CURRENT db.models.py
+print("Rebuilding fresh schema from models...")
+Base.metadata.create_all(engine)
+
+print("Database schema successfully recreated!")
