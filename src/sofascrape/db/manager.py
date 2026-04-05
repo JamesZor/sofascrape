@@ -1,5 +1,5 @@
+import datetime
 import logging
-from datetime import datetime
 from typing import Any, List, Optional
 
 from sqlalchemy import create_engine, select, update
