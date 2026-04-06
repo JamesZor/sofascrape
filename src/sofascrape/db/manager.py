@@ -330,9 +330,7 @@ class DatabaseManager:
                 period_time=safe_get(parsed_graph, "periodTime", default=0),
                 overtime_length=safe_get(parsed_graph, "overtimeLength", default=0),
                 period_count=safe_get(parsed_graph, "periodCount", default=0),
-                points=safe_get(
-                    parsed_graph, "graphPoints", default=None
-                ).to_sql_dict(),
+                points=safe_get(parsed_graph, "graphPoints", default=None),
             )
 
             # session.merge will cleanly Insert if new, or Update if the match_id exists

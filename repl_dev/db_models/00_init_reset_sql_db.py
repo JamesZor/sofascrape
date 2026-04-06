@@ -82,6 +82,7 @@ from sofascrape.football.graphComponent import FootballGraphComponentScraper
 from sofascrape.football.incidentsComponent import FootballIncidentsComponentScraper
 from sofascrape.football.lineupComonent import FootballLineupComponentScraper
 from sofascrape.football.oddsComponent import FootballOddsComponentScraper
+from sofascrape.football.statsComponent import FootballStatsComponentScraper
 from sofascrape.general.events import EventsComponentScraper
 from sofascrape.general.seasons import SeasonsComponentScraper
 
@@ -202,6 +203,16 @@ class SofaDevPipeline:
         self.db.upsert_match_odds(match_id=match_id, parsed_odds=scraper.data)
         print("✅ Match Odds saved.")
 
+    def test_match_statistics(self, match_id: int) -> None:
+        print(f"\n[9] Scraping Match statistics for {match_id}...")
+        scraper = FootballStatsComponentScraper(
+            matchid=match_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_match_statistics(match_id=match_id, parsed_stats=scraper.data)
+        print("✅ Match Odds saved.")
+
 
 # ==========================================
 # Execution Block (Edit this part to test!)
@@ -229,6 +240,10 @@ if __name__ == "__main__":
         pipeline.test_match_base(match_id=MATCH_ID)
         pipeline.test_match_lineups(match_id=MATCH_ID)
         pipeline.test_match_incidents(match_id=MATCH_ID)
+        pipeline.test_match_statistics(match_id=MATCH_ID)
+        pipeline.test_match_graph(match_id=MATCH_ID)
+        pipeline.test_match_odds(match_id=MATCH_ID)
+
         # pipeline.test_match_statistics(match_id=MATCH_ID)
 
     except Exception as e:
