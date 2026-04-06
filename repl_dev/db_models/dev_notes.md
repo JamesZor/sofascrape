@@ -12,3 +12,9 @@
         5. graph ( momentum) - Not started 
         6. odds - Not Started 
         7. shot map ( xG) - Need to research - create component 
+        8. average positions - https://www.sofascore.com/api/v1/event/14059939/average-positions
+
+        5. Player components; 
+            1. player statistics - https://www.sofascore.com/api/v1/event/14059939/player/1084356/statistics
+            2. player heatmap - https://www.sofascore.com/api/v1/event/14059939/player/1084356/heatmap
+

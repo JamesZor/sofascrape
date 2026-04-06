@@ -358,7 +358,6 @@ class DatabaseManager:
             session.merge(record)
             session.commit()
 
-    # TODO: 2026-04-06
     def upsert_match_odds(
         self, match_id: int, parsed_odds_markets: OddsSchema, raw_odds: list[dict]
     ) -> None:

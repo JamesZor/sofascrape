@@ -176,7 +176,6 @@ class MatchIncidents(Base):
     data = Column(JSONB)
 
 
-# TODO: 2026-04-06
 class MatchGraph(Base):
     __tablename__ = "match_graph"
     match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
@@ -187,7 +186,6 @@ class MatchGraph(Base):
     points = Column(JSONB)
 
 
-# TODO: 2026-04-06
 class MatchOdd(Base):
     __tablename__ = "match_odds"
 
