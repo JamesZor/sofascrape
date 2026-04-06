@@ -72,10 +72,6 @@ class MatchComponentAudit(Base):
     error_message = Column(Text, nullable=True)
 
 
-# --- The Golden Data Sink ---
-
-
-# TODO: Columns have been defined, sort the upsert
 class Match(Base):
     __tablename__ = "matches"
     match_id = Column(Integer, primary_key=True)
@@ -143,5 +139,11 @@ class MatchPlayerLineup(Base):
 
 class MatchIncidents(Base):
     __tablename__ = "match_incidents"
-    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    match_id = Column(Integer, ForeignKey("matches.match_id"), nullable=False)
+    # 'card', 'goal', 'substitution', 'period'
+    incident_type = Column(String, nullable=False)
+    time = Column(Integer)
+    added_time = Column(Integer)
+    is_home = Column(Boolean)
     data = Column(JSONB)

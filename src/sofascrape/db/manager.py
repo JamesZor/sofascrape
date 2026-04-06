@@ -1,14 +1,17 @@
+# src/sofascrape/db/models.py
+
 import datetime
 import logging
 from typing import Any, List, Optional
 
-from sqlalchemy import create_engine, select, update
+from sqlalchemy import create_engine, delete, select, update
 from sqlalchemy.orm import Session, sessionmaker
 
 from sofascrape.conf.config import AppConfig
 from sofascrape.db.models import (
     Events,
     Match,
+    MatchIncidents,
     MatchPlayerLineup,
     Season,
     Tournament,
@@ -16,6 +19,7 @@ from sofascrape.db.models import (
 from sofascrape.schemas.general import (
     EventSchema,
     FootballEventSchema,
+    FootballIncidentsSchema,
     FootballLineupSchema,
     SeasonSchema,
     TeamLineupSchema,
@@ -166,7 +170,6 @@ class DatabaseManager:
             session.merge(match_record)
             session.commit()
 
-    # TODO: Current wip
     def upsert_match_lineup(
         self, match_id: int, parsed_lineup: FootballLineupSchema
     ) -> None:
@@ -224,6 +227,39 @@ class DatabaseManager:
             process_team(parsed_lineup.away, is_home=False)
 
             # 3. Commit the transaction for the entire match lineup
+            session.commit()
+
+    def upsert_match_incident(
+        self, match_id: int, parsed_incidents: FootballIncidentsSchema
+    ) -> None:
+        """Saves all incidents for a match using a clean Wipe & Replace strategy."""
+
+        with self.SessionLocal() as session:
+            # 1. Clear existing incidents for this match to avoid duplicates on re-runs
+            session.execute(
+                delete(MatchIncidents).where(MatchIncidents.match_id == match_id)
+            )
+
+            incident_records = []
+
+            # Use getattr safely just in case the payload is empty
+            incidents_list = getattr(parsed_incidents, "incidents", [])
+
+            for inc in incidents_list:
+                record = MatchIncidents(
+                    match_id=match_id,
+                    incident_type=getattr(inc, "incidentType", "unknown"),
+                    time=safe_get(inc, "time", default=0),
+                    added_time=safe_get(inc, "addedTime", default=0),
+                    is_home=safe_get(inc, "isHome", default=False),
+                    data=inc.to_sql_dict(),
+                )
+                incident_records.append(record)
+
+            # 3. Bulk insert the freshly parsed records
+            if incident_records:
+                session.add_all(incident_records)
+
             session.commit()
 
     # def get_pending_tasks(self, limit: int = 50) -> List[MatchComponentAudit]:

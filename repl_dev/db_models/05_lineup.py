@@ -37,16 +37,13 @@ print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
 
 # 5. Let's test saving it to our brand new Postgres table!
 # TODO: create this functions
-    db.upsert_(
-    )
-
+db.upsert_match_lineup(match_id=match_id, parsed_lineup=scraper.data)
 # Always clean up the browser!
 print("Closing webdriver...")
 driver.close()
 
 
-
-'''
+"""
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
 --- Result ---                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
@@ -221,4 +218,4 @@ print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
                       },
 
 
-'''
+"""
