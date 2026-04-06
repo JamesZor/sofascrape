@@ -11,7 +11,9 @@ from sofascrape.conf.config import AppConfig
 from sofascrape.db.models import (
     Events,
     Match,
+    MatchGraph,
     MatchIncidents,
+    MatchOdd,
     MatchPlayerLineup,
     MatchStatistic,
     Season,
@@ -20,12 +22,14 @@ from sofascrape.db.models import (
 from sofascrape.schemas.general import (
     EventSchema,
     FootballEventSchema,
+    FootballGraphSchema,
     FootballIncidentsSchema,
     FootballLineupSchema,
     FootballStatsSchema,
     SeasonSchema,
     TeamLineupSchema,
 )
+from sofascrape.schemas.odds import OddsSchema
 
 logger = logging.getLogger(__name__)
 
@@ -310,6 +314,71 @@ class DatabaseManager:
             # 3. Bulk insert all the flattened stats
             if stat_records:
                 session.add_all(stat_records)
+
+            session.commit()
+
+    # TODO: 2026-04-06
+    def upsert_match_graph(
+        self, match_id: int, parsed_graph: FootballGraphSchema
+    ) -> None:
+        """Upserts the entire momentum graph payload into a single JSONB column."""
+
+        with self.SessionLocal() as session:
+            # Convert the Pydantic model back to a dictionary for JSONB
+            record = MatchGraph(
+                match_id=match_id,
+                period_time=safe_get(parsed_graph, "periodTime", default=0),
+                overtime_length=safe_get(parsed_graph, "overtimeLength", default=0),
+                period_count=safe_get(parsed_graph, "periodCount", default=0),
+                points=safe_get(
+                    parsed_graph, "graphPoints", default=None
+                ).to_sql_dict(),
+            )
+
+            # session.merge will cleanly Insert if new, or Update if the match_id exists
+            session.merge(record)
+            session.commit()
+
+    # TODO: 2026-04-06
+    def upsert_match_odds(
+        self, match_id: int, parsed_odds_markets: OddsSchema, raw_odds: list[dict]
+    ) -> None:
+        """Saves match betting odds using a Wipe & Replace strategy."""
+
+        with self.SessionLocal() as session:
+            # 1. Wipe existing odds for this match to avoid duplicates on re-runs
+            session.execute(delete(MatchOdd).where(MatchOdd.match_id == match_id))
+
+            odd_records = []
+
+            # 2. Loop through markets and their respective choices
+            for market, raw_market in zip(parsed_odds_markets, raw_odds):
+                # Primary Keys cannot be NULL, so fallback to "default" if choice_group is missing
+                c_group = market.choice_group or "default"
+
+                for choice in market.choices:
+                    record = MatchOdd(
+                        match_id=match_id,
+                        market_id=market.market_id,
+                        choice_group=c_group,
+                        choice_name=choice.name,
+                        market_name=market.market_name,
+                        is_live=market.is_live,
+                        suspended=market.suspended,
+                        # Unpack the Tuples created by your Pydantic validator
+                        initial_fraction_num=choice.initial_fractional_value[0],
+                        initial_fraction_den=choice.initial_fractional_value[1],
+                        fraction_num=choice.fractional_value[0],
+                        fraction_den=choice.fractional_value[1],
+                        winning=choice.winning,
+                        change=choice.change,
+                        raw_data=raw_market.to_sql_dict(),
+                    )
+                    odd_records.append(record)
+
+            # 3. Bulk insert the freshly parsed records
+            if odd_records:
+                session.add_all(odd_records)
 
             session.commit()
 

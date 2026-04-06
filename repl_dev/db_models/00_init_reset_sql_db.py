@@ -33,7 +33,10 @@ Base.metadata.create_all(engine)
 print("Database schema successfully recreated!")
 
 
+######################################################################################
 # --- Nuclear options ---
+######################################################################################
+
 from sqlalchemy import create_engine, text
 
 from sofascrape.conf.config import load_config
@@ -183,13 +186,13 @@ class SofaDevPipeline:
 # ==========================================
 if __name__ == "__main__":
     # Test Parameters
-    TOURNAMENT_ID = 56
-    SEASON_ID = 77129
+    # TOURNAMENT_ID = 56
+    # SEASON_ID = 77129
     # MATCH_ID = 14035506
 
     TOURNAMENT_ID = 54
     SEASON_ID = 77128
-    MATCH_ID = 14035131
+    MATCH_ID = 14035136
 
     pipeline = SofaDevPipeline()
 
@@ -201,9 +204,9 @@ if __name__ == "__main__":
         pipeline.test_seasons(target_id=TOURNAMENT_ID)
         pipeline.test_events(target_id=TOURNAMENT_ID, season_id=SEASON_ID)
 
-        # pipeline.test_match_base(match_id=MATCH_ID)
-        # pipeline.test_match_lineups(match_id=MATCH_ID)
-        # pipeline.test_match_incidents(match_id=MATCH_ID)
+        pipeline.test_match_base(match_id=MATCH_ID)
+        pipeline.test_match_lineups(match_id=MATCH_ID)
+        pipeline.test_match_incidents(match_id=MATCH_ID)
         # pipeline.test_match_statistics(match_id=MATCH_ID) <-- Ready for your new code!
 
     except Exception as e:

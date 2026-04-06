@@ -34,11 +34,11 @@ print("Data Parsed into Pydantic successfully!")
 
 # Let's look at what we got:
 print(f"\n--- Result ---")
-print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
+print(scraper.data.model_dump_json(indent=3))  # Pretty print the JSON
 
 # 5. Let's test saving it to our brand new Postgres table!
 # TODO: create this functions
-db.upsert_event(scraper.matchid, scraper.data, scraper.raw_data)
+db.upsert_match(scraper.matchid, scraper.data, scraper.raw_data)
 
 # Always clean up the browser!
 print("Closing webdriver...")

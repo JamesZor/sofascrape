@@ -174,3 +174,42 @@ class MatchIncidents(Base):
     added_time = Column(Integer)
     is_home = Column(Boolean)
     data = Column(JSONB)
+
+
+# TODO: 2026-04-06
+class MatchGraph(Base):
+    __tablename__ = "match_graph"
+    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
+
+    period_time = Column(Integer)  # Length of each period (usually 45 minutes)
+    overtime_length = Column(Integer)  # Length of overtime periods (usually 15 minutes)
+    period_count = Column(Integer)  # Number of periods (usually 2 for football)
+    points = Column(JSONB)
+
+
+# TODO: 2026-04-06
+class MatchOdd(Base):
+    __tablename__ = "match_odds"
+
+    # Composite Primary Key
+    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
+    market_id = Column(Integer, primary_key=True)
+    choice_group = Column(String, primary_key=True, default="default")
+    choice_name = Column(String, primary_key=True)
+
+    # Market Info
+    market_name = Column(String, nullable=False)
+    is_live = Column(Boolean)
+    suspended = Column(Boolean)
+
+    # Odds Values (Split into Numerator and Denominator)
+    initial_fraction_num = Column(Integer)
+    initial_fraction_den = Column(Integer)
+    fraction_num = Column(Integer)
+    fraction_den = Column(Integer)
+
+    # Outcome
+    winning = Column(Boolean, nullable=True)
+    change = Column(Integer)
+
+    raw_data = Column(JSONB)

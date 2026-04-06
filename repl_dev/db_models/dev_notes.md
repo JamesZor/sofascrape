@@ -7,7 +7,7 @@
     4. match components :
         1. basic details - Done.
         2. player line up - Done.
-        3. statistics - Not started. 
+        3. statistics - Done
         4. incidents - Done
         5. graph ( momentum) - Not started 
         6. odds - Not Started 
