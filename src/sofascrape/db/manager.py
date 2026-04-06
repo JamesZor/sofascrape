@@ -317,20 +317,41 @@ class DatabaseManager:
 
             session.commit()
 
-    # TODO: 2026-04-06
     def upsert_match_graph(
         self, match_id: int, parsed_graph: FootballGraphSchema
     ) -> None:
         """Upserts the entire momentum graph payload into a single JSONB column."""
 
         with self.SessionLocal() as session:
-            # Convert the Pydantic model back to a dictionary for JSONB
+            # 1. Safely extract the points list
+            raw_points = safe_get(parsed_graph, "graphPoints") or []
+
+            # 2. Convert the list of Pydantic models into a list of plain dictionaries!
+            points_dict_list = (
+                [
+                    # Use your custom to_sql_dict() if you have it, or standard Pydantic dumps
+                    (
+                        p.to_sql_dict()
+                        if hasattr(p, "to_sql_dict")
+                        else (
+                            p.model_dump(mode="json")
+                            if hasattr(p, "model_dump")
+                            else p.dict()
+                        )
+                    )
+                    for p in raw_points
+                ]
+                if raw_points
+                else None
+            )
+
+            # 3. Create the DB record
             record = MatchGraph(
                 match_id=match_id,
                 period_time=safe_get(parsed_graph, "periodTime", default=0),
                 overtime_length=safe_get(parsed_graph, "overtimeLength", default=0),
                 period_count=safe_get(parsed_graph, "periodCount", default=0),
-                points=safe_get(parsed_graph, "graphPoints", default=None),
+                points=points_dict_list,  # Pass the pure Python dicts, not Pydantic models!
             )
 
             # session.merge will cleanly Insert if new, or Update if the match_id exists
