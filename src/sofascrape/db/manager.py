@@ -391,7 +391,7 @@ class DatabaseManager:
                         fraction_den=choice.fractional_value[1],
                         winning=choice.winning,
                         change=choice.change,
-                        raw_data=raw_market.to_sql_dict(),
+                        raw_data=raw_market,
                     )
                     odd_records.append(record)
 

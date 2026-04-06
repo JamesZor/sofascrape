@@ -200,7 +200,11 @@ class SofaDevPipeline:
         )
         scraper.get_data()
         scraper.parse_data()
-        self.db.upsert_match_odds(match_id=match_id, parsed_odds=scraper.data)
+        self.db.upsert_match_odds(
+            match_id=match_id,
+            parsed_odds_markets=scraper.data,
+            raw_odds=scraper.raw_data,
+        )
         print("✅ Match Odds saved.")
 
     def test_match_statistics(self, match_id: int) -> None:
@@ -226,6 +230,8 @@ if __name__ == "__main__":
     TOURNAMENT_ID = 54
     SEASON_ID = 77128
     MATCH_ID = 14035136
+
+    match_id = MATCH_ID
 
     pipeline = SofaDevPipeline()
 
