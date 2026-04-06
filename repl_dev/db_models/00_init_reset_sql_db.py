@@ -78,8 +78,10 @@ from webdriver import ManagerWebdriver
 from sofascrape.conf.config import load_config
 from sofascrape.db.manager import DatabaseManager
 from sofascrape.football.eventComponent import EventFootallComponentScraper
+from sofascrape.football.graphComponent import FootballGraphComponentScraper
 from sofascrape.football.incidentsComponent import FootballIncidentsComponentScraper
 from sofascrape.football.lineupComonent import FootballLineupComponentScraper
+from sofascrape.football.oddsComponent import FootballOddsComponentScraper
 from sofascrape.general.events import EventsComponentScraper
 from sofascrape.general.seasons import SeasonsComponentScraper
 
@@ -180,6 +182,26 @@ class SofaDevPipeline:
         self.db.upsert_match_incident(match_id=match_id, parsed_incidents=scraper.data)
         print("✅ Match Incidents saved.")
 
+    def test_match_graph(self, match_id: int):
+        print(f"\n[7/7] Scraping Match Graph (Momentum) for {match_id}...")
+        scraper = FootballGraphComponentScraper(
+            matchid=match_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_match_graph(match_id=match_id, parsed_graph=scraper.data)
+        print("✅ Match Graph saved.")
+
+    def test_match_odds(self, match_id: int):
+        print(f"\n[8] Scraping Match Odds for {match_id}...")
+        scraper = FootballOddsComponentScraper(
+            matchid=match_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_match_odds(match_id=match_id, parsed_odds=scraper.data)
+        print("✅ Match Odds saved.")
+
 
 # ==========================================
 # Execution Block (Edit this part to test!)
@@ -207,7 +229,7 @@ if __name__ == "__main__":
         pipeline.test_match_base(match_id=MATCH_ID)
         pipeline.test_match_lineups(match_id=MATCH_ID)
         pipeline.test_match_incidents(match_id=MATCH_ID)
-        # pipeline.test_match_statistics(match_id=MATCH_ID) <-- Ready for your new code!
+        # pipeline.test_match_statistics(match_id=MATCH_ID)
 
     except Exception as e:
         print(f"\n❌ Error during scraping: {e}")
