@@ -99,10 +99,37 @@ class Match(Base):
     raw_data = Column(JSONB)
 
 
-class MatchStats(Base):
-    __tablename__ = "match_stats"
-    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
-    data = Column(JSONB)
+class MatchStatistic(Base):
+    __tablename__ = "match_statistics"
+
+    # Composite Primary Key guarantees no duplicate stats for a single match period
+    match_id = Column(Integer, ForeignKey("matches.id"), primary_key=True)
+    period = Column(String, primary_key=True)  # e.g., 'ALL', '1ST', '2ND'
+    group_name = Column(String, primary_key=True)  # e.g., 'Match overview', 'Shots'
+    stat_key = Column(
+        String, primary_key=True
+    )  # e.g., 'ballPossession', 'expectedGoals'
+
+    # Human-readable names and display strings
+    stat_name = Column(
+        String, nullable=False
+    )  # e.g., 'Ball possession', 'Hit woodwork'
+    home_display = Column(String)  # e.g., '55%', '114/147 (78%)'
+    away_display = Column(String)  # e.g., '45%', '57/87 (66%)'
+
+    # Pure numeric values for SQL math (AVERAGE, SUM, etc.)
+    home_value = Column(Float)
+    away_value = Column(Float)
+    home_total = Column(
+        Integer, nullable=True
+    )  # Only present in renderType 3 (e.g. Passes)
+    away_total = Column(Integer, nullable=True)  # Only present in renderType 3
+
+    # Metadata for UI rendering
+    compare_code = Column(Integer)
+    statistics_type = Column(String)  # 'positive', 'negative'
+    value_type = Column(String)  # 'event', 'team'
+    render_type = Column(Integer)  # 1, 2, 3
 
 
 class MatchPlayerLineup(Base):

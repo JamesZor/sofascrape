@@ -13,6 +13,7 @@ from sofascrape.db.models import (
     Match,
     MatchIncidents,
     MatchPlayerLineup,
+    MatchStatistic,
     Season,
     Tournament,
 )
@@ -21,6 +22,7 @@ from sofascrape.schemas.general import (
     FootballEventSchema,
     FootballIncidentsSchema,
     FootballLineupSchema,
+    FootballStatsSchema,
     SeasonSchema,
     TeamLineupSchema,
 )
@@ -259,6 +261,55 @@ class DatabaseManager:
             # 3. Bulk insert the freshly parsed records
             if incident_records:
                 session.add_all(incident_records)
+
+            session.commit()
+
+    def upsert_match_statistics(
+        self, match_id: int, parsed_stats: FootballStatsSchema
+    ) -> None:
+        """Flattens nested statistics and saves them using Wipe & Replace."""
+
+        with self.SessionLocal() as session:
+            # 1. Wipe existing stats for this match to prevent duplicates or orphaned rows
+            session.execute(
+                delete(MatchStatistic).where(MatchStatistic.match_id == match_id)
+            )
+
+            stat_records = []
+
+            # Use getattr safely just in case the payload is empty
+            periods_list = getattr(parsed_stats, "statistics", [])
+
+            # 2. Triple-loop to flatten the data: Period -> Group -> Item
+            for period_data in periods_list:
+                period_name = period_data.period
+
+                for group_data in period_data.groups:
+                    group_name = group_data.groupName
+
+                    for item in group_data.statisticsItems:
+                        record = MatchStatistic(
+                            match_id=match_id,
+                            period=period_name,
+                            group_name=group_name,
+                            stat_key=item.key,
+                            stat_name=item.name,
+                            home_display=item.home,
+                            away_display=item.away,
+                            home_value=item.homeValue,
+                            away_value=item.awayValue,
+                            home_total=item.homeTotal,
+                            away_total=item.awayTotal,
+                            compare_code=item.compareCode,
+                            statistics_type=item.statisticsType,
+                            value_type=item.valueType,
+                            render_type=item.renderType,
+                        )
+                        stat_records.append(record)
+
+            # 3. Bulk insert all the flattened stats
+            if stat_records:
+                session.add_all(stat_records)
 
             session.commit()
 

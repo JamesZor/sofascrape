@@ -37,11 +37,11 @@ scraper.parse_data()
 print(f"\n--- Result ---")
 print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
 
-print(scraper.data.incidents[11].model_dump_json(indent=2))  # Pretty print the JSON
+print(scraper.data.incidents[12].model_dump_json(indent=2))  # Pretty print the JSON
 
 # 5. Let's test saving it to our brand new Postgres table!
 # TODO:
-db.upsert_match_incident(match_id=match_id, parsed_lineup=scraper.data)
+db.upsert_match_incident(match_id=match_id, parsed_incidents=scraper.data)
 # Always clean up the browser!
 print("Closing webdriver...")
 driver.close()

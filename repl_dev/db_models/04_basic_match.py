@@ -38,8 +38,7 @@ print(scraper.data.model_dump_json(indent=6))  # Pretty print the JSON
 
 # 5. Let's test saving it to our brand new Postgres table!
 # TODO: create this functions
-    db.upsert_(
-    )
+db.upsert_event(scraper.matchid, scraper.data, scraper.raw_data)
 
 # Always clean up the browser!
 print("Closing webdriver...")

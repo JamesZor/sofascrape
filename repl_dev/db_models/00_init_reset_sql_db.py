@@ -60,3 +60,155 @@ print("Rebuilding fresh schema from models...")
 Base.metadata.create_all(engine)
 
 print("Database schema successfully recreated!")
+
+
+# ----- reset insert dbs after reseting the db models tables
+
+# src/dev_pipeline.py
+
+import os
+
+os.environ["DISPLAY"] = ":0"
+
+from webdriver import ManagerWebdriver
+
+from sofascrape.conf.config import load_config
+from sofascrape.db.manager import DatabaseManager
+from sofascrape.football.eventComponent import EventFootallComponentScraper
+from sofascrape.football.incidentsComponent import FootballIncidentsComponentScraper
+from sofascrape.football.lineupComonent import FootballLineupComponentScraper
+from sofascrape.general.events import EventsComponentScraper
+from sofascrape.general.seasons import SeasonsComponentScraper
+
+# Import all your scrapers
+from sofascrape.general.tournament import TournamentComponentScraper
+
+
+class SofaDevPipeline:
+    def __init__(self):
+        """Initializes the shared infrastructure (Config, DB, Webdriver)."""
+        print("Initializing Configuration and Database...")
+        self.config = load_config()
+        self.db = DatabaseManager(self.config)
+
+        print("Spawning Proxy-Rotating Webdriver...")
+        self.mw = ManagerWebdriver()
+        self.driver = self.mw.spawn_webdriver()
+
+    def close(self):
+        """Always call this to clean up the browser."""
+        print("Closing webdriver...")
+        self.driver.close()
+
+    # --- Phase 1: General Tournament Data ---
+
+    def test_tournament(self, target_id: int):
+        print(f"\n[1/6] Scraping Tournament {target_id}...")
+        scraper = TournamentComponentScraper(
+            tournamentid=target_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_tournament(scraper.data, scraper.raw_data)
+        print(f"✅ Tournament {scraper.data.tournament.name} saved.")
+
+    def test_seasons(self, target_id: int):
+        print(f"\n[2/6] Scraping Seasons for Tournament {target_id}...")
+        scraper = SeasonsComponentScraper(
+            tournamentid=target_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_seasons(
+            scraper.tournamentid,
+            scraper.data.seasons,
+            scraper.raw_data.get("seasons", []),
+        )
+        print("✅ Seasons saved.")
+
+    def test_events(self, target_id: int, season_id: int):
+        print(
+            f"\n[3/6] Scraping Events for Tournament {target_id}, Season {season_id}..."
+        )
+        scraper = EventsComponentScraper(
+            tournamentid=target_id,
+            seasonid=season_id,
+            webdriver=self.driver,
+            cfg=self.config,
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_events(
+            scraper.tournamentid,
+            scraper.data.events,
+            scraper.raw_data.get("events", []),
+        )
+        print("✅ Events saved.")
+
+    # --- Phase 2: Specific Match Data ---
+
+    def test_match_base(self, match_id: int):
+        print(f"\n[4/6] Scraping Base Match Data for {match_id}...")
+        scraper = EventFootallComponentScraper(
+            matchid=match_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_match(scraper.matchid, scraper.data, scraper.raw_data)
+        print("✅ Match Base Data saved.")
+
+    def test_match_lineups(self, match_id: int):
+        print(f"\n[5/6] Scraping Match Lineups for {match_id}...")
+        scraper = FootballLineupComponentScraper(
+            matchid=match_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_match_lineup(match_id=match_id, parsed_lineup=scraper.data)
+        print("✅ Match Lineups saved.")
+
+    def test_match_incidents(self, match_id: int):
+        print(f"\n[6/6] Scraping Match Incidents for {match_id}...")
+        scraper = FootballIncidentsComponentScraper(
+            matchid=match_id, webdriver=self.driver, cfg=self.config
+        )
+        scraper.get_data()
+        scraper.parse_data()
+        self.db.upsert_match_incident(match_id=match_id, parsed_incidents=scraper.data)
+        print("✅ Match Incidents saved.")
+
+
+# ==========================================
+# Execution Block (Edit this part to test!)
+# ==========================================
+if __name__ == "__main__":
+    # Test Parameters
+    TOURNAMENT_ID = 56
+    SEASON_ID = 77129
+    # MATCH_ID = 14035506
+
+    TOURNAMENT_ID = 54
+    SEASON_ID = 77128
+    MATCH_ID = 14035131
+
+    pipeline = SofaDevPipeline()
+
+    try:
+        # Uncomment the pieces you want to test right now.
+        # They will all share the exact same browser window!
+
+        pipeline.test_tournament(target_id=TOURNAMENT_ID)
+        pipeline.test_seasons(target_id=TOURNAMENT_ID)
+        pipeline.test_events(target_id=TOURNAMENT_ID, season_id=SEASON_ID)
+
+        # pipeline.test_match_base(match_id=MATCH_ID)
+        # pipeline.test_match_lineups(match_id=MATCH_ID)
+        # pipeline.test_match_incidents(match_id=MATCH_ID)
+        # pipeline.test_match_statistics(match_id=MATCH_ID) <-- Ready for your new code!
+
+    except Exception as e:
+        print(f"\n❌ Error during scraping: {e}")
+        raise
+    finally:
+        # This guarantees the proxy browser closes even if your code fails
+        pipeline.close()

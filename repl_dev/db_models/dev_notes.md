@@ -8,7 +8,7 @@
         1. basic details - Done.
         2. player line up - Done.
         3. statistics - Not started. 
-        4. incidents - Not started. 
+        4. incidents - Done
         5. graph ( momentum) - Not started 
         6. odds - Not Started 
         7. shot map ( xG) - Need to research - create component 
