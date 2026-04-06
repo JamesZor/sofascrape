@@ -103,7 +103,7 @@ class MatchStatistic(Base):
     __tablename__ = "match_statistics"
 
     # Composite Primary Key guarantees no duplicate stats for a single match period
-    match_id = Column(Integer, ForeignKey("matches.id"), primary_key=True)
+    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
     period = Column(String, primary_key=True)  # e.g., 'ALL', '1ST', '2ND'
     group_name = Column(String, primary_key=True)  # e.g., 'Match overview', 'Shots'
     stat_key = Column(
