@@ -40,7 +40,7 @@ class Season(Base):
 
 class Events(Base):
     __tablename__ = "events"
-    id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, primary_key=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     season_id = Column(Integer, ForeignKey("seasons.season_id"))
     name = Column(String)
@@ -62,7 +62,7 @@ class Events(Base):
 class MatchComponentAudit(Base):
     __tablename__ = "match_component_audit"
     audit_id = Column(Integer, primary_key=True, autoincrement=True)
-    match_id = Column(Integer, ForeignKey("matches.match_id"), nullable=False)
+    match_id = Column(Integer, ForeignKey("events.match_id"), nullable=False)
     component_name = Column(
         String, nullable=False
     )  # 'base', 'stats', 'lineups', 'odds'
@@ -148,7 +148,6 @@ class MatchPlayerLineup(Base):
     player_slug = Column(String)
     position = Column(String)
     shirt_number = Column(Integer)
-    jersey_number = Column(String)
 
     # Match Status
     substitute = Column(Boolean)

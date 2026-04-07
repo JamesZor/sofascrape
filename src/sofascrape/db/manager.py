@@ -115,7 +115,7 @@ class DatabaseManager:
         with self.SessionLocal() as session:
             for parsed_event, raw_event in zip(parsed_events, raw_event):
                 ev = Events(
-                    id=parsed_event.id,
+                    match_id=parsed_event.id,
                     tournament_id=tournament_id,
                     season_id=parsed_event.season.id,
                     name=parsed_event.slug,
@@ -210,7 +210,6 @@ class DatabaseManager:
                         player_slug=player_info.slug,
                         position=entry.position or player_info.position,
                         shirt_number=entry.shirtNumber,
-                        jersey_number=entry.jerseyNumber or player_info.jerseyNumber,
                         substitute=entry.substitute,
                         captain=entry.captain,
                         # Core stats pulled to top-level columns
