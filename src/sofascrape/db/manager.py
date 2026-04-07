@@ -11,6 +11,7 @@ from sofascrape.conf.config import AppConfig
 from sofascrape.db.models import (
     Events,
     Match,
+    MatchComponentAudit,
     MatchGraph,
     MatchIncidents,
     MatchOdd,
@@ -64,6 +65,21 @@ class DatabaseManager:
         self.SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self.engine
         )
+
+        # HACK: 2026-04-07 -
+        # 1. The Registry (Dictionary Dispatch)
+        self._component_savers = {
+            "base": lambda mid, parsed, raw: self.upsert_match(mid, parsed, raw or {}),
+            "stats": lambda mid, parsed, raw: self.upsert_match_statistics(mid, parsed),
+            "lineups": lambda mid, parsed, raw: self.upsert_match_lineup(mid, parsed),
+            "incidents": lambda mid, parsed, raw: self.upsert_match_incident(
+                mid, parsed
+            ),
+            "graph": lambda mid, parsed, raw: self.upsert_match_graph(mid, parsed),
+            "odds": lambda mid, parsed, raw: self.upsert_match_odds(
+                mid, parsed, raw or []
+            ),
+        }
 
     def upsert_tournament(self, tournament_data: Any, raw_data: dict = None) -> None:
         """Upserts a Tournament into the database."""
@@ -399,70 +415,57 @@ class DatabaseManager:
 
             session.commit()
 
-    # def get_pending_tasks(self, limit: int = 50) -> List[MatchComponentAudit]:
-    #     """Fetches a batch of pending or retryable tasks from the queue."""
-    #     with self.SessionLocal() as session:
-    #         # We want tasks that are PENDING, or QA_MISMATCH/API_ERROR that haven't hit the retry limit
-    #         stmt = (
-    #             select(MatchComponentAudit)
-    #             .where(
-    #                 MatchComponentAudit.status.in_(
-    #                     ["PENDING", "QA_MISMATCH", "API_ERROR"]
-    #                 ),
-    #                 MatchComponentAudit.retry_count
-    #                 < 3,  # Hardcoded for now, could use config
-    #             )
-    #             .limit(limit)
-    #         )
-    #
-    #         # session.scalars() unpacks the SQLAlchemy rows into actual Python objects
-    #         results = session.scalars(stmt).all()
-    #         return results
-    #
-    # def update_task_status(
-    #     self,
-    #     audit_id: int,
-    #     status: str,
-    #     error_message: Optional[str] = None,
-    #     increment_retry: bool = False,
-    # ) -> None:
-    #     """Updates the state of a specific task."""
-    #     with self.SessionLocal() as session:
-    #         task = session.get(MatchComponentAudit, audit_id)
-    #         if not task:
-    #             return
-    #
-    #         task.status = status
-    #         if error_message:
-    #             task.error_message = error_message
-    #         if increment_retry:
-    #             task.retry_count += 1
-    #
-    #         session.commit()
-    #
-    # def save_component_data(
-    #     self, match_id: int, component_name: str, pydantic_data: Any
-    # ) -> None:
-    #     """Saves the dumped Pydantic JSON to the correct table."""
-    #     with self.SessionLocal() as session:
-    #         # Pydantic v2 uses model_dump(mode='json'), v1 uses dict().
-    #         # This ensures we get a JSON-safe dictionary.
-    #         json_data = (
-    #             pydantic_data.model_dump(mode="json")
-    #             if hasattr(pydantic_data, "model_dump")
-    #             else pydantic_data.dict()
-    #         )
-    #
-    #         if component_name == "stats":
-    #             record = MatchStats(match_id=match_id, data=json_data)
-    #         elif component_name == "lineups":
-    #             record = MatchLineups(match_id=match_id, data=json_data)
-    #         elif component_name == "incidents":
-    #             record = MatchIncidents(match_id=match_id, data=json_data)
-    #         else:
-    #             raise ValueError(f"Unknown component: {component_name}")
-    #
-    #         # 'merge' performs an UPSERT (inserts if new, updates if existing)
-    #         session.merge(record)
-    #         session.commit()
-    #
+    def get_pending_tasks(self, limit: int = 50) -> List[MatchComponentAudit]:
+        """Fetches a batch of pending or retryable tasks from the queue."""
+        with self.SessionLocal() as session:
+            # We want tasks that are PENDING, or QA_MISMATCH/API_ERROR that haven't hit the retry limit
+            stmt = (
+                select(MatchComponentAudit)
+                .where(
+                    MatchComponentAudit.status.in_(
+                        ["PENDING", "QA_MISMATCH", "API_ERROR"]
+                    ),
+                    MatchComponentAudit.retry_count
+                    < 3,  # Hardcoded for now, could use config
+                )
+                .limit(limit)
+            )
+
+            # session.scalars() unpacks the SQLAlchemy rows into actual Python objects
+            results = session.scalars(stmt).all()
+            return results
+
+    def save_component_data(
+        self, match_id: int, component_name: str, parsed_data: Any, raw_data: Any = None
+    ) -> None:
+        """Routes the Pydantic model to the specific relational upsert method."""
+
+        # 2. Grab the function from the dictionary
+        save_func = self._component_savers.get(component_name)
+
+        if not save_func:
+            raise ValueError(f"Unknown component: {component_name}")
+
+        # 3. Execute the function
+        save_func(match_id, parsed_data, raw_data)
+
+    def update_task_status(
+        self,
+        audit_id: int,
+        status: str,
+        error_message: Optional[str] = None,
+        increment_retry: bool = False,
+    ) -> None:
+        """Updates the state of a specific task."""
+        with self.SessionLocal() as session:
+            task = session.get(MatchComponentAudit, audit_id)
+            if not task:
+                return
+
+            task.status = status
+            if error_message:
+                task.error_message = error_message
+            if increment_retry:
+                task.retry_count += 1
+
+            session.commit()

@@ -231,8 +231,6 @@ if __name__ == "__main__":
     SEASON_ID = 77128
     MATCH_ID = 14035136
 
-    match_id = MATCH_ID
-
     pipeline = SofaDevPipeline()
 
     try:
