@@ -69,6 +69,7 @@ tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, "odds")
 # --- The MVP Orchestrator Sandbox
 
 
+import os
 import time
 
 from webdriver import ManagerWebdriver
@@ -80,88 +81,22 @@ from sofascrape.db.manager import DatabaseManager
 # Adjust this import to match your actual class name in oddsComponent.py!
 from sofascrape.football.oddsComponent import FootballOddsComponentScraper
 
+os.environ["DISPLAY"] = ":0"
+
+
 # 1. Init infrastructure (if you haven't already in this session)
 config = load_config()
 db = DatabaseManager(config)
 
 
 # 2. Grab a tiny batch of tasks so we can watch it work
-def get_pending_tasks(db: DatabaseManager, limit: int = 2) -> list[MatchComponentAudit]:
-    """Fetches a batch of pending or retryable tasks from the queue."""
-    with db.SessionLocal() as session:
-        # We want tasks that are PENDING, or QA_MISMATCH/API_ERROR that haven't hit the retry limit
-        stmt = (
-            select(MatchComponentAudit)
-            .where(
-                MatchComponentAudit.status.in_(["PENDING", "QA_MISMATCH", "API_ERROR"]),
-                MatchComponentAudit.retry_count
-                < 3,  # Hardcoded for now, could use config
-            )
-            .limit(limit)
-        )
-        # session.scalars() unpacks the SQLAlchemy rows into actual Python objects
-        results = session.scalars(stmt).all()
-        return results
-
-
-tasks = get_pending_tasks(db=db, limit=3)
+tasks = db.get_pending_tasks(limit=3)
 print(f"\n--- Mini-Orchestrator grabbed {len(tasks)} tasks ---")
 print(tasks)
 
 # here we want to process a task:
 mw = ManagerWebdriver()
 driver = mw.spawn_webdriver()
-
-t1 = tasks[1]
-
-print(f"\n▶ Processing Match {t1.match_id} | Component: {t1.component_name}")
-
-# Instantiate your scraper
-scraper = FootballOddsComponentScraper(
-    matchid=t1.match_id, webdriver=driver, cfg=config
-)
-
-
-print("  - Fetch A...")
-scraper.get_data()
-scraper.parse_data()
-data_a = scraper.data
-raw_a = scraper.raw_data
-
-# --- PAUSE ---
-pause_time = config.pipeline.qa_pause_seconds
-print(f"  - Anti-bot pause for {pause_time}s...")
-time.sleep(pause_time)
-
-# --- FETCH B ---
-print("  - Fetch B...")
-scraper.get_data()
-scraper.parse_data()
-data_b = scraper.data
-
-# --- IN-MEMORY QA ---
-# Pydantic models can be directly compared with '=='!
-if data_a == data_b and data_a is not None:
-    print("  ✅ QA Passed! Data is identical.")
-
-    # We use the awesome routing method you built earlier!
-    # db.save_component_data(
-    #     match_id=task.match_id,
-    #     component_name=task.component_name,
-    #     parsed_data=data_a,
-    #     raw_data=raw_a,
-    # )
-    # Mark queue as done
-    # db.update_task_status(task.audit_id, status="SUCCESS")
-    print("  💾 Saved to PostgreSQL.")
-else:
-    print("  ❌ QA Mismatch! Randomization caught.")
-    # db.update_task_status(
-    #     task.audit_id,
-    #     status="QA_MISMATCH",
-    #     error_message="Fetch A != Fetch B",
-    #     increment_retry=True,
-    # )
 
 
 # TODO: 2026-04-07
@@ -180,6 +115,7 @@ def process_compenent(task, driver, config) -> None:
         scraper.get_data()
         scraper.parse_data()
         data_a = scraper.data
+        raw_a = scraper.raw_data
 
         # --- PAUSE ---
         pause_time = config.pipeline.qa_pause_seconds
@@ -198,40 +134,112 @@ def process_compenent(task, driver, config) -> None:
             print("  ✅ QA Passed! Data is identical.")
 
             # We use the awesome routing method you built earlier!
-            # db.save_component_data(
-            #     match_id=task.match_id,
-            #     component_name=task.component_name,
-            #     parsed_data=data_a,
-            #     raw_data=raw_a,
-            # )
-            # # Mark queue as done
-            # db.update_task_status(task.audit_id, status="SUCCESS")
+            db.save_component_data(
+                match_id=task.match_id,
+                component_name=task.component_name,
+                parsed_data=data_a,
+                raw_data=raw_a,
+            )
+            # Mark queue as done
+            db.update_task_status(task.audit_id, status="SUCCESS")
             print("  💾 Saved to PostgreSQL.")
         else:
             print("  ❌ QA Mismatch! Randomization caught.")
-            # db.update_task_status(
-            #     task.audit_id,
-            #     status="QA_MISMATCH",
-            #     error_message="Fetch A != Fetch B",
-            #     increment_retry=True,
-            # )
+            db.update_task_status(
+                task.audit_id,
+                status="QA_MISMATCH",
+                error_message="Fetch A != Fetch B",
+                increment_retry=True,
+            )
 
     except Exception as e:
         print(f"  ⚠️ Error scraping {task.match_id}: {e}")
-        # db.update_task_status(
-        #     task.audit_id,
-        #     status="API_ERROR",
-        #     error_message=str(e),
-        #     increment_retry=True,
-        # )
+        db.update_task_status(
+            task.audit_id,
+            status="API_ERROR",
+            error_message=str(e),
+            increment_retry=True,
+        )
 
 
-t1 = task[1]
-
-process_compenent(t1, driver, config)
+# -
+process_compenent(tasks[0], driver, config)
 
 # -------
 
+# 3. Spin up ONE webdriver for this test loop
+print("Spawning Webdriver...")
+mw = ManagerWebdriver()
+driver = mw.spawn_webdriver()
+
+task = tasks[1]
+print(f"\n▶ Processing Match {task.match_id} | Component: {task.component_name}")
+
+# Instantiate your scraper
+scraper = FootballOddsComponentScraper(
+    matchid=task.match_id, webdriver=driver, cfg=config
+)
+
+# --- FETCH A ---
+print("  - Fetch A...")
+scraper.get_data()
+scraper.parse_data()
+data_a = scraper.data
+raw_a = scraper.raw_data
+print(data_a.markets[1])
+
+# --- PAUSE ---
+pause_time = config.pipeline.qa_pause_seconds
+print(f"  - Anti-bot pause for {pause_time}s...")
+time.sleep(pause_time)
+
+# --- FETCH B ---
+print("  - Fetch B...")
+scraper.get_data()
+scraper.parse_data()
+data_b = scraper.data
+print(data_b.markets[1])
+
+# --- IN-MEMORY QA ---
+# Pydantic models can be directly compared with '=='!
+if data_a == data_b and data_a is not None:
+    print("  ✅ QA Passed! Data is identical.")
+else:
+    print("  ❌ QA Mismatch! Randomization caught.")
+
+
+# -- if pass run
+# We use the awesome routing method you built earlier!
+db.save_component_data(
+    match_id=task.match_id,
+    component_name=task.component_name,
+    parsed_data=data_a,
+    raw_data=raw_a,
+)
+# Mark queue as done
+db.update_task_status(task.audit_id, status="SUCCESS")
+print("  💾 Saved to PostgreSQL.")
+
+
+# -- if fail run
+# db.update_task_status(
+#     task.audit_id,
+#     status="QA_MISMATCH",
+#     error_message="Fetch A != Fetch B",
+#     increment_retry=True,
+# )
+
+# except Exception as e:
+#     print(f"  ⚠️ Error scraping {task.match_id}: {e}")
+#     db.update_task_status(
+#         task.audit_id,
+#         status="API_ERROR",
+#         error_message=str(e),
+#         increment_retry=True,
+#     )
+
+
+# ---
 if tasks:
     # 3. Spin up ONE webdriver for this test loop
     print("Spawning Webdriver...")

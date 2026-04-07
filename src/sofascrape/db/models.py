@@ -74,7 +74,7 @@ class MatchComponentAudit(Base):
 
 class Match(Base):
     __tablename__ = "matches"
-    match_id = Column(Integer, primary_key=True)
+    match_id = Column(Integer, ForeignKey("events.match_id"), primary_key=True)
     tournament_id = Column(Integer, ForeignKey("tournaments.tournament_id"))
     season_id = Column(Integer, ForeignKey("seasons.season_id"))
     name = Column(String)
@@ -103,7 +103,7 @@ class MatchStatistic(Base):
     __tablename__ = "match_statistics"
 
     # Composite Primary Key guarantees no duplicate stats for a single match period
-    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
+    match_id = Column(Integer, ForeignKey("events.match_id"), primary_key=True)
     period = Column(String, primary_key=True)  # e.g., 'ALL', '1ST', '2ND'
     group_name = Column(String, primary_key=True)  # e.g., 'Match overview', 'Shots'
     stat_key = Column(
@@ -136,7 +136,7 @@ class MatchPlayerLineup(Base):
     __tablename__ = "match_player_lineups"
 
     # Composite Primary Key: A specific player in a specific match
-    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
+    match_id = Column(Integer, ForeignKey("events.match_id"), primary_key=True)
     player_id = Column(Integer, primary_key=True)
 
     # Team Info
@@ -166,7 +166,7 @@ class MatchPlayerLineup(Base):
 class MatchIncidents(Base):
     __tablename__ = "match_incidents"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    match_id = Column(Integer, ForeignKey("matches.match_id"), nullable=False)
+    match_id = Column(Integer, ForeignKey("events.match_id"), nullable=False)
     # 'card', 'goal', 'substitution', 'period'
     incident_type = Column(String, nullable=False)
     time = Column(Integer)
@@ -177,7 +177,7 @@ class MatchIncidents(Base):
 
 class MatchGraph(Base):
     __tablename__ = "match_graph"
-    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
+    match_id = Column(Integer, ForeignKey("events.match_id"), primary_key=True)
 
     period_time = Column(Integer)  # Length of each period (usually 45 minutes)
     overtime_length = Column(Integer)  # Length of overtime periods (usually 15 minutes)
@@ -189,7 +189,7 @@ class MatchOdd(Base):
     __tablename__ = "match_odds"
 
     # Composite Primary Key
-    match_id = Column(Integer, ForeignKey("matches.match_id"), primary_key=True)
+    match_id = Column(Integer, ForeignKey("events.match_id"), primary_key=True)
     market_id = Column(Integer, primary_key=True)
     choice_group = Column(String, primary_key=True, default="default")
     choice_name = Column(String, primary_key=True)
