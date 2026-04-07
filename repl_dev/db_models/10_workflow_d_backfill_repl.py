@@ -137,11 +137,11 @@ def process_compenent(task, driver, config) -> None:
             db.save_component_data(
                 match_id=task.match_id,
                 component_name=task.component_name,
-                parsed_data=data_a,
-                raw_data=raw_a,
+                parsed_data=data_a.markets,
+                raw_data=raw_a.get("markets", []),
             )
             # Mark queue as done
-            db.update_task_status(task.audit_id, status="SUCCESS")
+            db.update_task_status(task.audit_id, status="SUCCESS", error_message="")
             print("  💾 Saved to PostgreSQL.")
         else:
             print("  ❌ QA Mismatch! Randomization caught.")
@@ -163,7 +163,7 @@ def process_compenent(task, driver, config) -> None:
 
 
 # -
-process_compenent(tasks[0], driver, config)
+process_compenent(tasks[2], driver, config)
 
 # -------
 
@@ -213,8 +213,8 @@ else:
 db.save_component_data(
     match_id=task.match_id,
     component_name=task.component_name,
-    parsed_data=data_a,
-    raw_data=raw_a,
+    parsed_data=data_a.markets,
+    raw_data=raw_a.get("markets", []),
 )
 # Mark queue as done
 db.update_task_status(task.audit_id, status="SUCCESS")
@@ -228,7 +228,6 @@ print("  💾 Saved to PostgreSQL.")
 #     error_message="Fetch A != Fetch B",
 #     increment_retry=True,
 # )
-
 # except Exception as e:
 #     print(f"  ⚠️ Error scraping {task.match_id}: {e}")
 #     db.update_task_status(

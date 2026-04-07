@@ -463,8 +463,13 @@ class DatabaseManager:
                 return
 
             task.status = status
-            if error_message:
+
+            # Automatically clear the error if it's a success
+            if status == "SUCCESS":
+                task.error_message = None
+            elif error_message:
                 task.error_message = error_message
+
             if increment_retry:
                 task.retry_count += 1
 
