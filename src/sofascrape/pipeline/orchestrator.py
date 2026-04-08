@@ -56,6 +56,20 @@ class Orchestrator:
         raw_data = getattr(scraper, "raw_data", None)
         return parsed_data, raw_data
 
+    def _handle_unavailable(self, task: MatchComponentAudit) -> None:
+        """Flags the task as permanently unavailable because the API returned no data both times."""
+        logger.info(
+            f"⏭️ Data unavailable for Match {task.match_id} ({task.component_name}). Skipping."
+        )
+
+        # We don't increment retry here, because retrying a 404 over and over is a waste of time.
+        self.db.update_task_status(
+            task.audit_id,
+            status="UNAVAILABLE",
+            error_message="API returned no data (404/Empty)",
+            increment_retry=False,
+        )
+
     def _handle_qa_success(
         self,
         task: MatchComponentAudit,
@@ -122,9 +136,14 @@ class Orchestrator:
             data_b, _ = self._scraper_process(scraper)
 
             # In-Memory Comparison
-            if data_a == data_b and data_a is not None:
+            if data_a is None and data_b is None:
+                # Both fetches returned nothing. The data doesn't exist.
+                self._handle_unavailable(task)
+            elif data_a == data_b:
+                # Data exists and is identical. Golden!
                 self._handle_qa_success(task, data_a, raw_a)
             else:
+                # Data exists but is different. We caught them randomizing!
                 self._handle_qa_mismatch(task)
 
         except Exception as e:
