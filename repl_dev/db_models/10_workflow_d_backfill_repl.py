@@ -52,7 +52,7 @@ def dev_queue_backfill(
         print(f"Found {len(match_ids)} matches. Queuing '{component.value}' tasks...")
 
         queued_count = 0
-        for m_id in match_ids:
+        for m_id in match_ids[0:30]:
             # Step B: Create a new pending task for this specific component
             task = MatchComponentAudit(
                 match_id=m_id, component_name=component.value, status="PENDING"
@@ -78,6 +78,11 @@ TARGET_SEASON_ID = 77128
 tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, "odds")
 
 tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, Component.BASE)
+tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, Component.LINEUPS)
+tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, Component.INCIDENTS)
+tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, Component.STATS)
+tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, Component.GRAPH)
+tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, Component.ODDS)
 
 # --- The MVP Orchestrator Sandbox
 

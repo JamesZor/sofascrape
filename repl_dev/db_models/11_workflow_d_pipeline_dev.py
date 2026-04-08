@@ -12,7 +12,11 @@ config = load_config()
 db = DatabaseManager(config)
 pipeline = Orchestrator(db, config)
 
-pipeline.run_worker_loop(max_workers=5, task_limit=300)
+pipeline.run_worker_loop(max_workers=5, task_limit=30)
+
+
+# -----
+
 
 driver = pipeline.mw.spawn_webdriver()
 
