@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from webdriver import MyWebDriver
 
 from sofascrape.abstract.base import BaseComponentScraper
+from sofascrape.football.sanitisers import OddsDataSanitiser
 from sofascrape.schemas import odds as SchemaOdds
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,8 @@ class FootballOddsComponentScraper(BaseComponentScraper):
         # This method will now only be called if raw_data is not None
         if self.raw_data is None:
             return
+
+        OddsDataSanitiser.sanitise(self.raw_data, self.matchid)
 
         try:
             self.data = SchemaOdds.OddsSchema.model_validate(self.raw_data)
