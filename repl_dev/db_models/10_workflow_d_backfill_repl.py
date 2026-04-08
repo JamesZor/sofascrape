@@ -1,6 +1,8 @@
 # ==========================================
 # PASTE THIS ENTIRE BLOCK INTO Ipython
 # ==========================================
+from enum import StrEnum
+
 from sqlalchemy import select
 
 from sofascrape.conf.config import load_config
@@ -15,14 +17,25 @@ db = DatabaseManager(config)
 # pipeline = Orchestrator(db, config)
 
 
+class Component(StrEnum):
+    STATS = "stats"
+    LINEUPS = "lineups"
+    INCIDENTS = "incidents"
+    ODDS = "odds"
+    BASE = "base"
+    GRAPH = "graph"
+
+
 # 2. Define our Sandbox Function
-def dev_queue_backfill(db_manager: DatabaseManager, season_id: int, component: str):
+def dev_queue_backfill(
+    db_manager: DatabaseManager, season_id: int, component: Component
+):
     """
     A standalone dev function to backfill a component for an entire season.
     (We can move this into manager.py later once you are happy with it!)
     """
     print(
-        f"\n--- Starting Backfill for Season {season_id} | Component: {component} ---"
+        f"\n--- Starting Backfill for Season {season_id} | Component: {component.value} ---"
     )
 
     with db_manager.SessionLocal() as session:
@@ -36,13 +49,13 @@ def dev_queue_backfill(db_manager: DatabaseManager, season_id: int, component: s
             print(f"⚠️ No matches found in the database for season {season_id}!")
             return 0
 
-        print(f"Found {len(match_ids)} matches. Queuing '{component}' tasks...")
+        print(f"Found {len(match_ids)} matches. Queuing '{component.value}' tasks...")
 
         queued_count = 0
         for m_id in match_ids:
             # Step B: Create a new pending task for this specific component
             task = MatchComponentAudit(
-                match_id=m_id, component_name=component, status="PENDING"
+                match_id=m_id, component_name=component.value, status="PENDING"
             )
             # using .merge() just in case a task already exists, it won't crash
             session.merge(task)
@@ -52,8 +65,6 @@ def dev_queue_backfill(db_manager: DatabaseManager, season_id: int, component: s
         print(f"✅ Successfully queued {queued_count} tasks!")
         return queued_count
 
-
-14035250
 
 # ==========================================
 # THE EXPERIMENT
@@ -65,6 +76,8 @@ TARGET_SEASON_ID = 77128
 
 # 1. Queue up the backfill (Let's try grabbing the odds!)
 tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, "odds")
+
+tasks_added = dev_queue_backfill(db, TARGET_SEASON_ID, Component.BASE)
 
 # --- The MVP Orchestrator Sandbox
 

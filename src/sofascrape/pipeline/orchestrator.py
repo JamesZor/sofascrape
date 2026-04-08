@@ -124,18 +124,21 @@ class Orchestrator:
             return
 
         try:
-            scraper = scraper_class(
+
+            # FETCH A (Isolated Instance)
+            scraper_a = scraper_class(
                 matchid=task.match_id, webdriver=driver, cfg=self.config
             )
-
-            # Fetch A
-            data_a, raw_a = self._scraper_process(scraper)
+            data_a, raw_a = self._scraper_process(scraper_a)
 
             # Anti-Randomization Pause
             time.sleep(self.config.pipeline.qa_pause_seconds)
 
-            # Fetch B
-            data_b, _ = self._scraper_process(scraper)
+            # FETCH B (Completely Fresh Instance)
+            scraper_b = scraper_class(
+                matchid=task.match_id, webdriver=driver, cfg=self.config
+            )
+            data_b, _ = self._scraper_process(scraper_b)
 
             # In-Memory Comparison
             if data_a is None and data_b is None:
