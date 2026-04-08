@@ -131,16 +131,18 @@ class Orchestrator:
             # Safely passes the exception without risking UnboundLocalError
             self._handle_scraper_error(task, e)
 
-    def run_worker_loop(self):
+    def run_worker_loop(self, max_workers: int = 2, task_limit: int = 3):
         """Fetches a batch of tasks, spins up webdrivers, and processes them concurrently."""
-        tasks = self.db.get_pending_tasks(limit=self.config.pipeline.batch_size)
+        # tasks = self.db.get_pending_tasks(limit=self.config.pipeline.batch_size)
+        tasks = self.db.get_pending_tasks(limit=task_limit)
 
         if not tasks:
             logger.info("No pending tasks found. Queue is empty.")
             return
 
         # Ensure we don't spin up 5 webdrivers if we only have 2 tasks
-        num_workers = min(self.config.pipeline.max_workers, len(tasks))
+        # num_workers = min(self.config.pipeline.max_workers, len(tasks))
+        num_workers = min(max_workers, len(tasks))
 
         logger.info(f"Spinning up {num_workers} webdrivers for {len(tasks)} tasks...")
 
