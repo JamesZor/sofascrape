@@ -15,7 +15,7 @@ from sofascrape.football.eventComponent import EventFootallComponentScraper
 from sofascrape.football.graphComponent import FootballGraphComponentScraper
 from sofascrape.football.incidentsComponent import FootballIncidentsComponentScraper
 from sofascrape.football.lineupComonent import FootballLineupComponentScraper
-from sofascrape.football.oddsComponent import OddsComponentScraper
+from sofascrape.football.oddsComponent import FootballOddsComponentScraper
 
 # Import your Scraper Classes (Adjust paths if needed!)
 from sofascrape.football.statsComponent import FootballStatsComponentScraper
@@ -41,7 +41,7 @@ class Orchestrator:
             "stats": FootballStatsComponentScraper,
             "lineups": FootballLineupComponentScraper,
             "incidents": FootballIncidentsComponentScraper,
-            "odds": OddsComponentScraper,
+            "odds": FootballOddsComponentScraper,
             "base": EventFootallComponentScraper,
             "graph": FootballGraphComponentScraper,
         }
