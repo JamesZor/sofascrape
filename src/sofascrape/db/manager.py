@@ -77,7 +77,7 @@ class DatabaseManager:
             ),
             "graph": lambda mid, parsed, raw: self.upsert_match_graph(mid, parsed),
             "odds": lambda mid, parsed, raw: self.upsert_match_odds(
-                mid, parsed, raw or []
+                mid, parsed.markets, raw.get("markets", [])
             ),
         }
 

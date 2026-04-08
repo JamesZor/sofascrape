@@ -8,6 +8,9 @@ config = load_config()
 db = DatabaseManager(config)
 pipeline = Orchestrator(db, config)
 
+import os
+
+os.environ["DISPLAY"] = ":0"
 
 mw = ManagerWebdriver()
 driver = mw.spawn_webdriver()
@@ -15,6 +18,7 @@ driver = mw.spawn_webdriver()
 
 tasks = db.get_pending_tasks(limit=3)
 
+pipeline._process_single_task(task=tasks[1], driver=driver)
 
 # Unleash the threads!
-pipeline.run_worker_loop()
+pipeline.run_worker_loop(max_workers=2, task_limit=12)
