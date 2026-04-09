@@ -1,6 +1,7 @@
 # src/sofascrape/db/models.py
 
 from datetime import datetime
+from enum import StrEnum
 
 from sqlalchemy import (
     Boolean,
@@ -16,6 +17,29 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
+
+
+class EventsStatusTypes(StrEnum):
+    POSTPONED = "postponed"
+    NOTSTARTED = "notstarted"
+    FINISHED = "finished"
+
+
+class AuditStatusTypes(StrEnum):
+    PENDING = "PENDING"
+    SUCCESS = "SUCCESS"
+    UNAVAILABLE = "UNAVAILABLE"
+    SKIPPED_MISSING = "SKIPPED_MISSING"
+
+
+class Component(StrEnum):
+    STATS = "stats"
+    LINEUPS = "lineups"
+    INCIDENTS = "incidents"
+    ODDS = "odds"
+    BASE = "base"
+    GRAPH = "graph"
+
 
 # --- Core Relational Tables ---
 
