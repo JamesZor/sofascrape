@@ -254,8 +254,8 @@ class Orchestrator:
         try:
             with tqdm(
                 total=len(tasks),
-                desc="Scraping tasks (threaded)",
-                unit="match_component",
+                desc=f"Scraping tasks (threaded - {num_workers})",
+                unit="component",
             ) as pbar:
                 with ThreadPoolExecutor(max_workers=num_workers) as executor:
 
