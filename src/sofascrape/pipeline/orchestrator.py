@@ -150,6 +150,7 @@ class Orchestrator:
 
         return delta
 
+    # HACK: 2026-04-10 not needed ?
     def _scraper_process(
         self, scraper: BaseComponentScraper
     ) -> tuple[ConvertibleBaseModel, dict]:
@@ -257,7 +258,7 @@ class Orchestrator:
             scraper_a = scraper_class(
                 matchid=task.match_id, webdriver=driver, cfg=self.config
             )
-            data_a, raw_a = self._scraper_process(scraper_a)
+            data_a, raw_a = scraper_a.process()
 
             # Anti-Randomization Pause
             smart_sleep(
@@ -269,7 +270,8 @@ class Orchestrator:
             scraper_b = scraper_class(
                 matchid=task.match_id, webdriver=driver, cfg=self.config
             )
-            data_b, _ = self._scraper_process(scraper_b)
+
+            data_b, _ = scraper_b.process()
 
             # Check for the Delta
             is_match, delta = self._get_qa_delta(data_a, data_b)
@@ -580,7 +582,7 @@ class Orchestrator:
                 webdriver=driver,
                 cfg=self.config,
             )
-            parsed_api_data, raw_api_data = self._scraper_process(scraper=scraper)
+            parsed_api_data, raw_api_data = scraper.process()
 
             # Extract the actual list of events from the raw payload
             raw_events_list = raw_api_data.get("events", [])

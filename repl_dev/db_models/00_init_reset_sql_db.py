@@ -223,30 +223,33 @@ class SofaDevPipeline:
 # ==========================================
 if __name__ == "__main__":
     # Test Parameters
-    # TOURNAMENT_ID = 56
-    # SEASON_ID = 77129
-    # MATCH_ID = 14035506
+    TOURNAMENT_ID = 56  # league one
+    SEASON_ID = 77129
+    MATCH_ID = 14035506
 
-    TOURNAMENT_ID = 54
-    SEASON_ID = 77128
-    MATCH_ID = 14035136
+    TOURNAMENT_ID = 57  # league two
+    SEASON_ID = 77045
 
-    pipeline = SofaDevPipeline()
+    # TOURNAMENT_ID = 54
+    # SEASON_ID = 77128
+    # MATCH_ID = 14035136
+    #
+    insert_pipeline = SofaDevPipeline()
 
     try:
         # Uncomment the pieces you want to test right now.
         # They will all share the exact same browser window!
 
-        pipeline.test_tournament(target_id=TOURNAMENT_ID)
-        pipeline.test_seasons(target_id=TOURNAMENT_ID)
-        pipeline.test_events(target_id=TOURNAMENT_ID, season_id=SEASON_ID)
+        insert_pipeline.test_tournament(target_id=TOURNAMENT_ID)
+        insert_pipeline.test_seasons(target_id=TOURNAMENT_ID)
+        insert_pipeline.test_events(target_id=TOURNAMENT_ID, season_id=SEASON_ID)
 
-        pipeline.test_match_base(match_id=MATCH_ID)
-        pipeline.test_match_lineups(match_id=MATCH_ID)
-        pipeline.test_match_incidents(match_id=MATCH_ID)
-        pipeline.test_match_statistics(match_id=MATCH_ID)
-        pipeline.test_match_graph(match_id=MATCH_ID)
-        pipeline.test_match_odds(match_id=MATCH_ID)
+        insert_pipeline.test_match_base(match_id=MATCH_ID)
+        insert_pipeline.test_match_lineups(match_id=MATCH_ID)
+        insert_pipeline.test_match_incidents(match_id=MATCH_ID)
+        insert_pipeline.test_match_statistics(match_id=MATCH_ID)
+        insert_pipeline.test_match_graph(match_id=MATCH_ID)
+        insert_pipeline.test_match_odds(match_id=MATCH_ID)
 
         # pipeline.test_match_statistics(match_id=MATCH_ID)
 
