@@ -30,6 +30,8 @@ class AuditStatusTypes(StrEnum):
     SUCCESS = "SUCCESS"
     UNAVAILABLE = "UNAVAILABLE"
     SKIPPED_MISSING = "SKIPPED_MISSING"
+    QA_MISMATCH = "QA_MISMATCH"
+    API_ERROR = "API_ERROR"
 
 
 class Component(StrEnum):

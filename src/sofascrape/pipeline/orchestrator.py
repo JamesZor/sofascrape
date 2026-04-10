@@ -116,7 +116,7 @@ class Orchestrator:
         # We don't increment retry here, because retrying a 404 over and over is a waste of time.
         self.db.update_task_status(
             task.audit_id,
-            status="UNAVAILABLE",
+            status=AuditStatusTypes.UNAVAILABLE.value,
             error_message="API returned no data (404/Empty)",
             increment_retry=False,
         )
@@ -134,7 +134,7 @@ class Orchestrator:
             parsed_data=parsed_data,
             raw_data=raw_data,
         )
-        self.db.update_task_status(task.audit_id, status="SUCCESS")
+        self.db.update_task_status(task.audit_id, status=AuditStatusTypes.SUCCESS.value)
         logger.info(f"✅ QA Passed for Match {task.match_id} ({task.component_name})!")
 
     def _handle_qa_mismatch(self, task: MatchComponentAudit) -> None:
@@ -144,7 +144,7 @@ class Orchestrator:
         )
         self.db.update_task_status(
             task.audit_id,
-            status="QA_MISMATCH",
+            status=AuditStatusTypes.QA_MISMATCH.value,
             error_message="Fetch A did not match Fetch B",
             increment_retry=True,
         )
@@ -156,7 +156,7 @@ class Orchestrator:
         )
         self.db.update_task_status(
             task.audit_id,
-            status="API_ERROR",
+            status=AuditStatusTypes.API_ERROR.value,
             error_message=str(e),
             increment_retry=True,
         )

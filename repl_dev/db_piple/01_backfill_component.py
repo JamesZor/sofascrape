@@ -27,6 +27,11 @@ results_queue = pipeline.queue_season_missing_components(
 pipeline.run_worker_loop(max_workers=2, task_limit=30)
 
 
+# retyr method
+pipeline.retry_failed_components(season_id=77129)
+pipeline.run_worker_loop()
+
+
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------
