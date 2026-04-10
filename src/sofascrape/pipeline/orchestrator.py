@@ -644,7 +644,6 @@ class Orchestrator:
             tournament_id=tournament_id, season_id=season_id
         )
 
-        # NOTE: Adjust '.events' based on your actual Pydantic schema structure!
         parsed_events_list = parsed_api_data.events
 
         logger.info(
@@ -697,7 +696,10 @@ class Orchestrator:
             logger.info(
                 f"🔥 {total_queued} new tasks queued! Spinning up the worker pool..."
             )
-            self.run_worker_loop()
+            self.run_worker_loop(
+                max_workers=self.config.pipeline.max_workers,
+                task_limit=self.config.pipeline.batch_size,
+            )
         else:
             logger.info("✅ Database is fully up-to-date. No workers needed today.")
 

@@ -16,6 +16,7 @@ class DataBaseConfig:
 
 @dataclass
 class PipelineConfig:
+    max_workers: int
     max_retries: int
     batch_size: int
 
