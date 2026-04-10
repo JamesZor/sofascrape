@@ -4,7 +4,7 @@ import logging
 import queue
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, Type
+from typing import Any, Callable, Dict, Type
 
 from sqlalchemy import select
 from tqdm import tqdm

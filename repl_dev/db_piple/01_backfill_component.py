@@ -3,6 +3,36 @@ import os
 os.environ["DISPLAY"] = ":0"
 
 
+from sqlalchemy import select
+
+from sofascrape.conf.config import load_config
+from sofascrape.db.manager import DatabaseManager
+from sofascrape.db.models import Component, Events, MatchComponentAudit
+from sofascrape.pipeline.orchestrator import Orchestrator
+
+config = load_config()
+db = DatabaseManager(config)
+pipeline = Orchestrator(db, config)
+
+# TOURNAMENT_ID = 54 # scottish PL
+TARGET_SEASON_ID = 77128  # season 25/26
+
+
+pipeline.backfill_component(
+    season_id=TARGET_SEASON_ID, component=Component.STATS, debug_limit=10
+)
+
+pipeline.run_worker_loop(max_workers=2, task_limit=30)
+
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------
+
+
+os.environ["DISPLAY"] = ":0"
+
+
 from enum import StrEnum
 from typing import Any, Callable, Dict
 
