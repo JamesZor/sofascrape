@@ -59,6 +59,29 @@ class BaseComponentScraper(BaseScraperModel, ABC, Generic[T]):
 
         pass
 
+    # HACK: 2026-04-10
+    #
+    # def process(self) -> Optional[T]:  # Make sure the return type is Optional[T]
+    #     """High-level workflow: fetch, parse, and return data."""
+    #     try:
+    #         # self.get_data() can now potentially set self.raw_data to None
+    #         self.get_data()
+    #
+    #         # If get_data() resulted in no data (e.g., a 404), just return None.
+    #         if self.raw_data is None:
+    #             logger.warning(
+    #                 "No raw data available to process. Component will return None."
+    #             )
+    #             return None
+    #
+    #         self.parse_data()
+    #         return self.data
+    #
+    #     except Exception as e:
+    #         logger.error(f"Processing failed with an exception: {str(e)}")
+    #         # In case of an unexpected error, return None to prevent crashing the whole scrape
+    #         return None
+
     def process(self) -> tuple[Optional[T], Optional[dict]]:
         """High-level workflow: fetch, parse, and return both parsed and raw data."""
         try:
@@ -76,3 +99,92 @@ class BaseComponentScraper(BaseScraperModel, ABC, Generic[T]):
         except Exception as e:
             logger.error(f"❌ Processing failed with an exception: {str(e)}")
             return None, None
+
+
+class BaseMatchScraper(BaseScraperModel, ABC):
+
+    def __init__(
+        self, webdriver: MyWebDriver, matchid: int, cfg: Optional[DictConfig] = None
+    ) -> None:
+
+        super().__init__(cfg=cfg)
+
+        self.webdriver: MyWebDriver = webdriver
+
+        self.matchid: int = matchid
+
+    @abstractmethod
+    def scrape(self):
+        """Orchestrate scraping of all components for a match."""
+
+        pass
+
+
+class BaseSeasonScraper(BaseScraperModel, ABC):
+
+    def __init__(
+        self,
+        tournamentid: int,
+        seasonid: int,
+        managerwebdriver: Optional[ManagerWebdriver] = None,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
+
+        super().__init__(cfg=cfg)
+
+        self.tournamentid: int = tournamentid
+
+        self.seasonid: int = seasonid
+
+        self.mw: ManagerWebdriver = (
+            managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
+        )
+
+        self.data: Optional[T] = None
+
+    @abstractmethod
+    def scrape(self):
+        """Scrape all matches in a season."""
+
+        pass
+
+
+class BaseLeagueScraper(BaseScraperModel, ABC):
+
+    def __init__(
+        self,
+        tournamentid: int,
+        managerwebdriver: Optional[ManagerWebdriver] = None,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
+
+        super().__init__(cfg=cfg)
+
+        self.tournamentid: int = tournamentid
+
+        self.mw: ManagerWebdriver = (
+            managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
+        )
+
+        self.cfg: DictConfig = cfg if cfg is not None else self._get_cfg()
+
+    @abstractmethod
+    def scrape(self):
+        """Scrape all seasons (and thus all matches) in a league."""
+
+        pass
+
+
+class BaseTournamentProcessor(BaseScraperModel, ABC):
+
+    def __init__(
+        self,
+        managerwebdriver: Optional[ManagerWebdriver] = None,
+        cfg: Optional[DictConfig] = None,
+    ) -> None:
+
+        super().__init__(cfg=cfg)
+
+        self.mw: ManagerWebdriver = (
+            managerwebdriver if managerwebdriver is not None else ManagerWebdriver()
+        )

@@ -155,9 +155,6 @@ print("📥 Building the historical backfill queue...")
 total_queued = 0
 
 for tournament_id, season_id in historical_targets:
-    insert_pipeline.test_events(target_id=tournament_id, season_id=season_id)
-
-for tournament_id, season_id in historical_targets:
     print(f"\n--- Processing Tournament {tournament_id} | Season {season_id} ---")
 
     insert_pipeline.test_events(target_id=tournament_id, season_id=season_id)
