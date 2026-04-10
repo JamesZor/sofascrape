@@ -17,7 +17,6 @@ class DataBaseConfig:
 @dataclass
 class PipelineConfig:
     max_retries: int
-    qa_pause_seconds: float
     batch_size: int
 
 
