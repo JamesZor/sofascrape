@@ -29,4 +29,4 @@ anti_bot_sleep:
     strategy: "gamma"
     params:
       alpha: 4
-      beta: 0.8
+      beta: 2
