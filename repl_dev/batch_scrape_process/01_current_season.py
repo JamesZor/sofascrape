@@ -110,6 +110,12 @@ pipeline.run_worker_loop(
      37031 |            56 | 21/22 | League One 21/22      |
      29270 |            56 | 20/21 | League One 20/21      |
 """
+
+# 1. Bootstrap the Tournaments (Fetches metadata, seasons, and all calendars)
+pipeline.setup_tournament(56)  # League One
+pipeline.setup_tournament(57)  # League Two
+
+
 import logging
 import os
 
@@ -127,15 +133,19 @@ os.environ["DISPLAY"] = ":0"
 
 # --- Setup ---
 config = load_config()
+
+
 db = DatabaseManager(config)
 pipeline = Orchestrator(db, config)
 
+# target_components = [Component.BASE]
+#
+#
+# target_components = [Component.INCIDENTS]
+#
 target_components = [Component.BASE]
 
 target_components = [Component.ODDS]
-
-target_components = [Component.INCIDENTS]
-
 # Create a list of tuples containing (tournament_id, season_id)
 # This ensures the API gets the exact right combination every time!
 historical_targets = [
@@ -165,7 +175,7 @@ for tournament_id, season_id in historical_targets:
 
     # 1. Update the Events table first!
     # This hits the API and upserts all 200+ matches for the season into the DB.
-    pipeline.sync_events(tournament_id=tournament_id, season_id=season_id)
+    # pipeline.sync_events(tournament_id=tournament_id, season_id=season_id)
 
     # 2. Now that the DB knows about the matches, queue up the components!
     queued_dict = pipeline.queue_season_missing_components(
