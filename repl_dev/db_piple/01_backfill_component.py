@@ -17,7 +17,7 @@ pipeline = Orchestrator(db, config)
 # TOURNAMENT_ID = 54 # scottish PL
 TARGET_SEASON_ID = 77128  # season 25/26
 
-
+# old
 pipeline.backfill_component(
     season_id=TARGET_SEASON_ID, component=Component.STATS, debug_limit=10
 )

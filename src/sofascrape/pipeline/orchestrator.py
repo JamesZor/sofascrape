@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, Type
 
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 from tqdm import tqdm
 
 # Import your heavy webdriver manager
@@ -316,7 +317,138 @@ class Orchestrator:
 
     # ---- main workflow ----
 
-    def backfill_component(
+    # def backfill_component(
+    #     self,
+    #     season_id: int,
+    #     component: Component,
+    #     debug_limit: int | None = None,
+    #     strict_mode: bool = True,
+    # ) -> int:
+    #     """
+    #     WORKFLOW D: Backfills a specific component for an entire season.
+    #     """
+    #     logger.info(
+    #         f"--- Starting Backfill | Season: {season_id} | Component: {component.value} | Strict: {strict_mode} ---"
+    #     )
+    #
+    #     with self.db.SessionLocal() as session:
+    #         stmt = select(
+    #             Events.match_id,
+    #             Events.hasXg,
+    #             Events.hasEventPlayerStatistics,
+    #             Events.hasEventPlayerHeatMap,
+    #         ).where(
+    #             Events.season_id == season_id,
+    #             Events.status_type == EventsStatusTypes.FINISHED,
+    #         )
+    #
+    #         if debug_limit is not None:
+    #             stmt = stmt.limit(debug_limit)
+    #
+    #         matches = session.execute(stmt).all()
+    #
+    #         if not matches:
+    #             logger.warning(
+    #                 f"⚠️ No matches found in the database: season_id: {season_id}"
+    #             )
+    #             return 0
+    #
+    #         logger.info(f"Found {len(matches)} matches. Processing...")
+    #
+    #         queued_count = 0
+    #         skipped_count = 0
+    #
+    #         for row in matches:
+    #             # 1. SRP Helper: Get the status
+    #             target_status = self._determine_task_status(row, component, strict_mode)
+    #
+    #             # 2. Database Action: Create and merge the task
+    #             task = MatchComponentAudit(
+    #                 match_id=row.match_id,
+    #                 component_name=component.value,
+    #                 status=target_status,
+    #             )
+    #             session.merge(task)
+    #
+    #             # 3. Counter Action: Update the correct tally
+    #             if target_status == AuditStatusTypes.SKIPPED_MISSING:
+    #                 skipped_count += 1
+    #             else:
+    #                 queued_count += 1
+    #
+    #         session.commit()
+    #         logger.info(
+    #             f"✅ Finished! Queued {queued_count} tasks | Skipped {skipped_count} tasks."
+    #         )
+    #
+    #     return queued_count
+    #
+    def _get_events_season(
+        self, session: Session, season_id: int, debug_limit: int | None = None
+    ) -> list[Events]:
+        """
+        helper functions to get the matches from the events table
+        """
+        stmt = select(
+            Events.match_id,
+            Events.hasXg,
+            Events.hasEventPlayerStatistics,
+            Events.hasEventPlayerHeatMap,
+        ).where(
+            Events.season_id == season_id,
+            Events.status_type == EventsStatusTypes.FINISHED,
+        )
+
+        if debug_limit is not None:
+            stmt = stmt.limit(debug_limit)
+
+        matches = session.execute(stmt).all()
+
+        if not matches:
+            logger.warning(
+                f"⚠️ No matches found in the database: season_id: {season_id}"
+            )
+            return []
+
+        return matches
+
+    def _filter_events_seson_matches(
+        self,
+        session: Session,
+        raw_matches: list[
+            Any
+        ],  # Using Any because it's technically a SQLAlchemy Row containing Event columns
+        component: Component,
+    ) -> list[Any]:
+        """
+        Helper method to filter out matches that have already been queued
+        in the match_component_audit table for a specific component.
+        """
+        if not raw_matches:
+            return []
+
+        # 1. Extract the match_ids from the matches we just fetched
+        match_ids = [row.match_id for row in raw_matches]
+
+        # 2. Query the audit table to see which of these IDs ALREADY exist
+        stmt = select(MatchComponentAudit.match_id).where(
+            MatchComponentAudit.match_id.in_(match_ids),
+            MatchComponentAudit.component_name == component.value,
+        )
+
+        # session.scalars() returns a flat list of just the IDs (not full objects/rows)
+        # We cast it to a set() for lightning-fast lookups
+        existing_match_ids = set(session.scalars(stmt).all())
+
+        # 3. Keep only the rows whose match_id is NOT in the existing set
+        filtered_matches = [
+            row for row in raw_matches if row.match_id not in existing_match_ids
+        ]
+
+        return filtered_matches
+
+    # --- queue_season_missing_component dev  ----
+    def queue_season_missing_component(
         self,
         season_id: int,
         component: Component,
@@ -324,40 +456,39 @@ class Orchestrator:
         strict_mode: bool = True,
     ) -> int:
         """
-        WORKFLOW D: Backfills a specific component for an entire season.
+        Backfills a season for the specfic component.
+        debug_limit: limits the amount added - used for testing.
+            strict_mode: Some API calls return none as there is no data, this is reflected in events table which we check.
         """
+
         logger.info(
-            f"--- Starting Backfill | Season: {season_id} | Component: {component.value} | Strict: {strict_mode} ---"
+            f"--- Starting Backfill | Season: {season_id} | Component: {component.value} | Strict: {strict_mode} | Limit: {debug_limit} ---"
         )
 
         with self.db.SessionLocal() as session:
-            stmt = select(
-                Events.match_id,
-                Events.hasXg,
-                Events.hasEventPlayerStatistics,
-                Events.hasEventPlayerHeatMap,
-            ).where(
-                Events.season_id == season_id,
-                Events.status_type == EventsStatusTypes.FINISHED,
+            raw_matches = self._get_events_season(
+                session=session,
+                season_id=season_id,
+                debug_limit=debug_limit,
             )
 
-            if debug_limit is not None:
-                stmt = stmt.limit(debug_limit)
-
-            matches = session.execute(stmt).all()
-
-            if not matches:
-                logger.warning(
-                    f"⚠️ No matches found in the database: season_id: {season_id}"
-                )
+            logger.info(f"Found {len(raw_matches)} matches.")
+            # check empty
+            if not raw_matches:
                 return 0
 
-            logger.info(f"Found {len(matches)} matches. Processing...")
+            # filter
+            filtered_matches = self._filter_events_seson_matches(
+                session=session, raw_matches=raw_matches, component=component
+            )
+            logger.info(f"Filtered matches: {len(filtered_matches)}")
+            if not filtered_matches:
+                return 0
 
             queued_count = 0
             skipped_count = 0
 
-            for row in matches:
+            for row in filtered_matches:
                 # 1. SRP Helper: Get the status
                 target_status = self._determine_task_status(row, component, strict_mode)
 
@@ -381,3 +512,42 @@ class Orchestrator:
             )
 
         return queued_count
+
+    def queue_season_missing_components(
+        self,
+        season_id: int,
+        components: list[Component],
+        debug_limit: int | None = None,
+        strict_mode: bool = True,
+    ) -> dict[str, int]:  # Fixed return type
+        """
+        Processes a list of components for a season sequentially.
+        """
+        component_names = [c.value for c in components]
+        logger.info(
+            f"Starting multi-component queue for Season {season_id}: {component_names}"
+        )
+
+        components_queued_count: dict[str, int] = {}
+
+        for component in components:
+            try:
+                queued = self.queue_season_missing_component(
+                    season_id=season_id,
+                    component=component,
+                    debug_limit=debug_limit,
+                    strict_mode=strict_mode,
+                )
+                components_queued_count[component.value] = queued
+
+            except Exception as e:
+                # Catch failures so the rest of the list can still process
+                logger.error(
+                    f"❌ Failed to queue component '{component.value}' for season {season_id}: {e}"
+                )
+                components_queued_count[component.value] = 0
+
+        logger.info(
+            f"Multi-component queue complete for Season {season_id}: {components_queued_count}"
+        )
+        return components_queued_count
