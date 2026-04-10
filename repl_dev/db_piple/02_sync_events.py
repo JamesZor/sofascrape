@@ -20,6 +20,10 @@ pipeline = Orchestrator(db, config)
 tournament_id = 56
 season_id = 77129
 
+pipeline.sync_events(tournament_id=tournament_id, season_id=season_id)
+
+
+# -----------
 
 # 1. Get the events from the DB
 with db.SessionLocal() as session:

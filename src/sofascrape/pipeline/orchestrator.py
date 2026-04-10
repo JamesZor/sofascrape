@@ -36,6 +36,7 @@ from sofascrape.schemas.general import (
     ConvertibleBaseModel,
     EventSchema,
 )
+from sofascrape.utils.sleepers import smart_sleep
 
 # Add your base match scraper and graph scraper here too when ready!
 
@@ -196,7 +197,10 @@ class Orchestrator:
             data_a, raw_a = self._scraper_process(scraper_a)
 
             # Anti-Randomization Pause
-            time.sleep(self.config.pipeline.qa_pause_seconds)
+            smart_sleep(
+                strategy=self.config.pipeline.anti_bot_sleep.strategy,
+                params=self.config.pipeline.anti_bot_sleep.params,
+            )
 
             # FETCH B (Completely Fresh Instance)
             scraper_b = scraper_class(
@@ -599,3 +603,34 @@ class Orchestrator:
             )
 
         return delta_match_ids
+
+    def sync_season(
+        self, tournament_id: int, season_id: int, components: list[Component]
+    ) -> None:
+        """
+        WORKFLOW A: The "Weekly Update" Command.
+        1. Updates the calendar.
+        2. Audits the queue for any missing components for finished matches.
+        3. Runs the multi-threaded workers to fetch the missing data.
+        """
+        logger.info(f"Starting Master Workflow: Syncing Season {season_id}...")
+
+        # Step 1: Update the Calendar (Finds new matches and updates kickoff times)
+        self.sync_events(tournament_id=tournament_id, season_id=season_id)
+
+        # Step 2: The Safety Net (Returns a dict like {'stats': 2, 'odds': 0})
+        queued_dict: dict[str, int] = self.queue_season_missing_components(
+            season_id=season_id, components=components
+        )
+
+        # Step 3: Flatten the dictionary to get the total number of tasks
+        total_queued: int = sum(queued_dict.values())
+
+        # Step 4: Unleash the Hounds
+        if total_queued > 0:
+            logger.info(
+                f"🔥 {total_queued} new tasks queued! Spinning up the worker pool..."
+            )
+            self.run_worker_loop()
+        else:
+            logger.info("✅ Database is fully up-to-date. No workers needed today.")

@@ -4,6 +4,7 @@ Simple script to read the YAML of conf/setting.yaml
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -42,6 +43,12 @@ class LinksConfig:
 
 
 @dataclass
+class AntiBotSleepConfig:
+    strategy: str
+    params: dict[str, Any]
+
+
+@dataclass
 class AppConfig:
     """The master config dataclass"""
 
@@ -49,6 +56,7 @@ class AppConfig:
     pipeline: PipelineConfig
     scraper: ScraperConfig
     links: LinksConfig
+    anti_bot_sleep: AntiBotSleepConfig
 
 
 def load_config(config_file_name: str = "settings.yaml") -> AppConfig:
@@ -74,6 +82,7 @@ def load_config(config_file_name: str = "settings.yaml") -> AppConfig:
         pipeline=PipelineConfig(**raw_data.get("pipeline", {})),
         scraper=ScraperConfig(**raw_data.get("scraper", {})),
         links=LinksConfig(**raw_data.get("links", {})),
+        anti_bot_sleep=AntiBotSleepConfig(**raw_data.get("anti_bot_sleep", {})),
     )
 
 
