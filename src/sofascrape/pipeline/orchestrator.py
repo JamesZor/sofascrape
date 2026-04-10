@@ -165,7 +165,7 @@ class Orchestrator:
         status_symbol = "✓" if success else "✗"
         pbar.set_postfix(
             {
-                "Last": f"{completed_task.match_id} {status_symbol}",
+                "Last": f"{completed_task.match_id}.{completed_task.component_name} {status_symbol}",
                 "Success": f"{success_count}/{pbar.n + 1}",
             }
         )
