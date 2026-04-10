@@ -1,8 +1,8 @@
 # src/sofascrape/pipeline/orchestrator.py
 
+import json
 import logging
 import queue
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, Type
 
@@ -97,6 +97,59 @@ class Orchestrator:
             "graph": FootballGraphComponentScraper,
         }
 
+    def _get_qa_delta(self, data_a: Any, data_b: Any) -> tuple[bool, dict]:
+        """
+        Deep compares two payloads.
+        Returns (True, {}) if identical.
+        Returns (False, {"key": {"a": val, "b": val}}) if different.
+        """
+        # 1. Handle the None cases
+        if data_a is None and data_b is None:
+            return True, {}
+        if data_a is None or data_b is None:
+            return False, {
+                "root_payload": {
+                    "a": "None" if data_a is None else "Data",
+                    "b": "None" if data_b is None else "Data",
+                }
+            }
+
+        # 2. Convert Pydantic models to dicts (Assuming Pydantic v2 `model_dump`)
+        dict_a = data_a.model_dump() if hasattr(data_a, "model_dump") else data_a
+        dict_b = data_b.model_dump() if hasattr(data_b, "model_dump") else data_b
+
+        # Safety fallback if they somehow aren't dicts
+        if not isinstance(dict_a, dict) or not isinstance(dict_b, dict):
+            if dict_a == dict_b:
+                return True, {}
+            return False, {"raw_value": {"a": str(dict_a), "b": str(dict_b)}}
+
+        # 3. Calculate the deep dictionary delta
+        delta = self._calculate_dict_delta(dict_a, dict_b)
+
+        # If delta is empty (length 0), they match!
+        return len(delta) == 0, delta
+
+    def _calculate_dict_delta(self, dict_a: dict, dict_b: dict) -> dict:
+        """Recursive helper to find differences between two dictionaries."""
+        delta = {}
+        all_keys = set(dict_a.keys()).union(set(dict_b.keys()))
+
+        for k in all_keys:
+            val_a = dict_a.get(k)
+            val_b = dict_b.get(k)
+
+            # If both are nested dictionaries, go deeper
+            if isinstance(val_a, dict) and isinstance(val_b, dict):
+                nested_delta = self._calculate_dict_delta(val_a, val_b)
+                if nested_delta:
+                    delta[k] = nested_delta
+            # If they are different, record the delta
+            elif val_a != val_b:
+                delta[k] = {"a": val_a, "b": val_b}
+
+        return delta
+
     def _scraper_process(
         self, scraper: BaseComponentScraper
     ) -> tuple[ConvertibleBaseModel, dict]:
@@ -137,15 +190,23 @@ class Orchestrator:
         self.db.update_task_status(task.audit_id, status=AuditStatusTypes.SUCCESS.value)
         logger.info(f"✅ QA Passed for Match {task.match_id} ({task.component_name})!")
 
-    def _handle_qa_mismatch(self, task: MatchComponentAudit) -> None:
-        """Flags the task for retry due to data randomization."""
+    def _handle_qa_mismatch(self, task: MatchComponentAudit, delta: dict) -> None:
+        """Flags the task for retry and logs the exact data differences."""
         logger.warning(
             f"❌ QA Mismatch for Match {task.match_id} ({task.component_name})."
         )
+
+        # Convert the dictionary to a string, and optionally truncate it to 500 chars
+        # so it doesn't overflow your database column if the diff is massive.
+        delta_str = json.dumps(delta)
+        error_msg = f"QA Mismatch | Delta: {delta_str}"
+        if len(error_msg) > 500:
+            error_msg = error_msg[:497] + "..."
+
         self.db.update_task_status(
             task.audit_id,
             status=AuditStatusTypes.QA_MISMATCH.value,
-            error_message="Fetch A did not match Fetch B",
+            error_message=error_msg,
             increment_retry=True,
         )
 

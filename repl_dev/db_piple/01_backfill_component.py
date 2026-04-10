@@ -28,7 +28,7 @@ pipeline.run_worker_loop(max_workers=2, task_limit=30)
 
 
 # retyr method
-pipeline.retry_failed_components(season_id=77129)
+pipeline.retry_failed_components(season_id=77128)
 pipeline.run_worker_loop()
 
 
