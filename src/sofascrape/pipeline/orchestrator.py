@@ -469,7 +469,6 @@ class Orchestrator:
             raw_matches = self._get_events_season(
                 session=session,
                 season_id=season_id,
-                debug_limit=debug_limit,
             )
 
             logger.info(f"Found {len(raw_matches)} matches.")
@@ -481,6 +480,10 @@ class Orchestrator:
             filtered_matches = self._filter_events_seson_matches(
                 session=session, raw_matches=raw_matches, component=component
             )
+
+            if debug_limit is not None:
+                filtered_matches = filtered_matches[:debug_limit]
+
             logger.info(f"Filtered matches: {len(filtered_matches)}")
             if not filtered_matches:
                 return 0

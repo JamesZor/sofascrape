@@ -16,11 +16,33 @@ pipeline = Orchestrator(db, config)
 
 # TOURNAMENT_ID = 54 # scottish PL
 TARGET_SEASON_ID = 77128  # season 25/26
+target_components: list[Component] = [Component.BASE, Component.STATS]
+
+
+results_queue = pipeline.queue_season_missing_components(
+    season_id=TARGET_SEASON_ID,
+    components=target_components,
+    debug_limit=5
+)
+
 
 # old
 pipeline.backfill_component(
     season_id=TARGET_SEASON_ID, component=Component.STATS, debug_limit=10
 )
+
+
+
+
+
+
+    def queue_season_missing_components(
+        self,
+        season_id: int,
+        components: list[Component],
+        debug_limit: int | None = None,
+        strict_mode: bool = True,
+    ) -> dict[str, int]:  # Fixed return type
 
 pipeline.run_worker_loop(max_workers=2, task_limit=30)
 
