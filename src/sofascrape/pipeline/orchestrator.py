@@ -33,6 +33,7 @@ from sofascrape.football.oddsComponent import FootballOddsComponentScraper
 
 # Import your Scraper Classes (Adjust paths if needed!)
 from sofascrape.football.statsComponent import FootballStatsComponentScraper
+from sofascrape.general import SeasonsComponentScraper, TournamentComponentScraper
 from sofascrape.general.events import EventsComponentScraper
 from sofascrape.schemas.general import (
     ConvertibleBaseModel,
@@ -97,6 +98,78 @@ class Orchestrator:
             "graph": FootballGraphComponentScraper,
         }
 
+    # TODO: 2026-04-10
+    def _fetch_and_upsert_tournament():
+        pass
+
+    # TODO: 2026-04-10
+    def _fetch_and_upsert_seasons():
+        pass
+
+    # TODO: 2026-04-10
+    def setup_tournament(self, tournament_id: int) -> None:
+        """
+        WORKFLOW D: The Bootstrapper.
+        Initialises a tournament by pulling its metadata, all historical seasons,
+        and the full match calendar (Events) for every season.
+        """
+        logger.info(f"Bootstrapping Tournament {tournament_id}...")
+
+        # Spawn a driver for the quick metadata fetches
+        driver = self.mw.spawn_webdriver()
+        try:
+            # 1. Fetch & Upsert Tournament
+            logger.info("-> Fetching Tournament metadata...")
+            t_scraper = TournamentComponentScraper(
+                tournamentid=tournament_id, webdriver=driver, cfg=self.config
+            )
+            t_parsed, t_raw = t_scraper.process()
+
+            if t_parsed and t_raw:
+                self.db.upsert_tournament(t_parsed, t_raw)
+                logger.info(f"✅ Tournament '{t_parsed.tournament.name}' saved.")
+            else:
+                logger.error("❌ Failed to fetch tournament metadata. Aborting setup.")
+                return
+
+            # 2. Fetch & Upsert Seasons
+            logger.info("-> Fetching Seasons list...")
+            s_scraper = SeasonsComponentScraper(
+                tournamentid=tournament_id, webdriver=driver, cfg=self.config
+            )
+            s_parsed, s_raw = s_scraper.process()
+
+            if s_parsed and s_raw:
+                self.db.upsert_seasons(
+                    tournament_id, s_parsed.seasons, s_raw.get("seasons", [])
+                )
+                logger.info(f"✅ Saved {len(s_parsed.seasons)} historical seasons.")
+            else:
+                logger.error("❌ Failed to fetch seasons. Aborting setup.")
+                return
+
+            # Extract season IDs to loop through
+            season_ids = [s.id for s in s_parsed.seasons]
+
+        finally:
+            # Always close this specific driver when done!
+            driver.close()
+
+        # 3. Fetch & Upsert Events for EVERY season
+        # We loop outside the try/finally block because sync_events() manages
+        # its own fresh webdrivers safely!
+        logger.info(
+            f"-> Syncing calendars for {len(season_ids)} seasons. This may take a moment..."
+        )
+
+        for s_id in season_ids:
+            # Reusing your bulletproof Calendar Updater!
+            self.sync_events(tournament_id=tournament_id, season_id=s_id)
+
+        logger.info(
+            f"🎉 Tournament {tournament_id} is fully bootstrapped and ready for component extraction!"
+        )
+
     def _get_qa_delta(self, data_a: Any, data_b: Any) -> tuple[bool, dict]:
         """
         Deep compares two payloads.
@@ -149,17 +222,6 @@ class Orchestrator:
                 delta[k] = {"a": val_a, "b": val_b}
 
         return delta
-
-    # HACK: 2026-04-10 not needed ?
-    def _scraper_process(
-        self, scraper: BaseComponentScraper
-    ) -> tuple[ConvertibleBaseModel, dict]:
-        """Runs the scraper and returns parsed_data and raw_data."""
-        scraper.get_data()
-        scraper.parse_data()
-        parsed_data = scraper.data
-        raw_data = getattr(scraper, "raw_data", None)
-        return parsed_data, raw_data
 
     def _handle_unavailable(self, task: MatchComponentAudit) -> None:
         """Flags the task as permanently unavailable because the API returned no data both times."""

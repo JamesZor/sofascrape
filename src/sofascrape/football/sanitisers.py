@@ -101,7 +101,7 @@ class OddsDataSanitiser:
         Applies type safety. If corrupted, flags all choices as None for downstream grading.
         """
         if is_corrupted:
-            logger.warning(
+            logger.info(
                 f"Market {market_id} corrupted by duplicates. Flagging 'winning' as None for grading."
             )
             for c in choices:
@@ -127,6 +127,6 @@ class OddsDataSanitiser:
                     found_winner = True
                 else:
                     c["winning"] = False
-                    logger.warning(
+                    logger.info(
                         f"Safety: Stripped secondary 'winning: True' from '{c.get('name')}'."
                     )

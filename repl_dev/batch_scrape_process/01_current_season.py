@@ -132,6 +132,10 @@ pipeline = Orchestrator(db, config)
 
 target_components = [Component.BASE]
 
+target_components = [Component.ODDS]
+
+target_components = [Component.INCIDENTS]
+
 # Create a list of tuples containing (tournament_id, season_id)
 # This ensures the API gets the exact right combination every time!
 historical_targets = [
@@ -157,7 +161,7 @@ total_queued = 0
 for tournament_id, season_id in historical_targets:
     print(f"\n--- Processing Tournament {tournament_id} | Season {season_id} ---")
 
-    insert_pipeline.test_events(target_id=tournament_id, season_id=season_id)
+    # insert_pipeline.test_events(target_id=tournament_id, season_id=season_id)
 
     # 1. Update the Events table first!
     # This hits the API and upserts all 200+ matches for the season into the DB.
@@ -179,8 +183,17 @@ if total_queued > 0:
     print(f"\n🚀 Total tasks queued: {total_queued}. Spinning up the worker pool...")
     pipeline.run_worker_loop(
         max_workers=config.pipeline.max_workers,
-        task_limit=1000,  # <-- Let it run until it's finished!
+        task_limit=2000,  # <-- Let it run until it's finished!
     )
     print("\n✅ Historical backfill complete!")
 else:
     print("\n✅ Database is already fully populated for these seasons.")
+
+
+# 1. Sweep up the 6 QA_MISMATCH errors (Sets them back to PENDING)
+pipeline.retry_failed_components()
+
+# 2. Run the engine to fetch those last 6 matches
+pipeline.run_worker_loop(
+    max_workers=2, task_limit=10  # Just need 1 or 2 workers for a quick cleanup
+)
