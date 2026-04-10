@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Type
 
 from sqlalchemy import select
+from tqdm import tqdm
 
 # Import your heavy webdriver manager
 from webdriver import ManagerWebdriver
@@ -152,7 +153,25 @@ class Orchestrator:
             increment_retry=True,
         )
 
-    def _process_single_task(self, task: MatchComponentAudit, driver: Any) -> None:
+    def _pbar_update_run_work_loop(
+        self,
+        pbar: tqdm,
+        success: bool,
+        completed_task: MatchComponentAudit,
+        success_count: int,
+    ) -> None:
+        """helper function to update the progress bar (tqdm) in the run_worker_loop method."""
+
+        status_symbol = "✓" if success else "✗"
+        pbar.set_postfix(
+            {
+                "Last": f"{completed_task.match_id} {status_symbol}",
+                "Success": f"{success_count}/{pbar.n + 1}",
+            }
+        )
+        pbar.update(1)
+
+    def _process_single_task(self, task: MatchComponentAudit, driver: Any) -> bool:
         """The core worker logic executed by a single thread."""
         logger.info(
             f"[Thread] Processing Match {task.match_id} | {task.component_name}"
@@ -161,7 +180,7 @@ class Orchestrator:
         scraper_class = self._scraper_registry.get(task.component_name)
         if not scraper_class:
             logger.error(f"No scraper mapped for '{task.component_name}'")
-            return
+            return False
 
         try:
 
@@ -184,16 +203,31 @@ class Orchestrator:
             if data_a is None and data_b is None:
                 # Both fetches returned nothing. The data doesn't exist.
                 self._handle_unavailable(task)
+                return False
             elif data_a == data_b:
                 # Data exists and is identical. Golden!
                 self._handle_qa_success(task, data_a, raw_a)
+                return True
             else:
                 # Data exists but is different. We caught them randomizing!
                 self._handle_qa_mismatch(task)
+                return False
 
         except Exception as e:
             # Safely passes the exception without risking UnboundLocalError
             self._handle_scraper_error(task, e)
+            return False
+
+    def _thread_worker(
+        self, task: MatchComponentAudit, driver_pool: queue.Queue
+    ) -> tuple[MatchComponentAudit, bool]:
+        """Concurrency wrapper to manage driver state and execute the task."""
+        driver = driver_pool.get()
+        try:
+            success = self._process_single_task(task, driver)
+            return task, success
+        finally:
+            driver_pool.put(driver)
 
     def run_worker_loop(self, max_workers: int = 2, task_limit: int = 3):
         """Fetches a batch of tasks, spins up webdrivers, and processes them concurrently."""
@@ -204,10 +238,7 @@ class Orchestrator:
             logger.info("No pending tasks found. Queue is empty.")
             return
 
-        # Ensure we don't spin up 5 webdrivers if we only have 2 tasks
-        # num_workers = min(self.config.pipeline.max_workers, len(tasks))
         num_workers = min(max_workers, len(tasks))
-
         logger.info(f"Spinning up {num_workers} webdrivers for {len(tasks)} tasks...")
 
         # 1. CREATE THE DRIVER POOL (The Bucket)
@@ -221,27 +252,35 @@ class Orchestrator:
         logger.info(f"Starting ThreadPoolExecutor...")
 
         try:
-            with ThreadPoolExecutor(max_workers=num_workers) as executor:
-                futures = {}
+            with tqdm(
+                total=len(tasks),
+                desc="Scraping tasks (threaded)",
+                unit="match_component",
+            ) as pbar:
+                with ThreadPoolExecutor(max_workers=num_workers) as executor:
 
-                # 2. SUBMIT TASKS TO THREADS
-                for task in tasks:
-                    # Thread blocks here until a driver is available in the pool
-                    driver = driver_pool.get()
+                    futures = {}
+                    success_count: int = 0
 
-                    # Submit the task to the background thread
-                    future = executor.submit(self._process_single_task, task, driver)
+                    # 2. SUBMIT TASKS TO THREADS
+                    for task in tasks:
+                        future = executor.submit(self._thread_worker, task, driver_pool)
+                        futures[future] = task
 
-                    # IMPORTANT: When the thread finishes, put the driver back in the bucket!
-                    def return_driver_to_pool(f, d=driver):
-                        driver_pool.put(d)
+                    # 3. LIVE PROGRESS BAR UPDATES
+                    for future in as_completed(futures):
+                        # Unpack the results from the thread wrapper
+                        completed_task, success = future.result()
 
-                    future.add_done_callback(return_driver_to_pool)
-                    futures[future] = task
+                        if success:
+                            success_count += 1
 
-                # 3. WAIT FOR COMPLETION
-                for future in as_completed(futures):
-                    future.result()  # Will raise any fatal thread crashes so we can see them
+                        self._pbar_update_run_work_loop(
+                            pbar=pbar,
+                            success=success,
+                            completed_task=completed_task,
+                            success_count=success_count,
+                        )
 
         finally:
             # 4. CLEANUP
