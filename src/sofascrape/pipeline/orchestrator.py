@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from tqdm import tqdm
 
 # Import your heavy webdriver manager
-from webdriver import ManagerWebdriver
+from webdriver import ManagerWebdriver, MyWebDriver
 
 from sofascrape.abstract.base import BaseComponentScraper
 from sofascrape.conf.config import AppConfig
@@ -31,7 +31,11 @@ from sofascrape.football.oddsComponent import FootballOddsComponentScraper
 
 # Import your Scraper Classes (Adjust paths if needed!)
 from sofascrape.football.statsComponent import FootballStatsComponentScraper
-from sofascrape.schemas.general import ConvertibleBaseModel
+from sofascrape.general.events import EventsComponentScraper
+from sofascrape.schemas.general import (
+    ConvertibleBaseModel,
+    EventSchema,
+)
 
 # Add your base match scraper and graph scraper here too when ready!
 
@@ -317,72 +321,6 @@ class Orchestrator:
 
     # ---- main workflow ----
 
-    # def backfill_component(
-    #     self,
-    #     season_id: int,
-    #     component: Component,
-    #     debug_limit: int | None = None,
-    #     strict_mode: bool = True,
-    # ) -> int:
-    #     """
-    #     WORKFLOW D: Backfills a specific component for an entire season.
-    #     """
-    #     logger.info(
-    #         f"--- Starting Backfill | Season: {season_id} | Component: {component.value} | Strict: {strict_mode} ---"
-    #     )
-    #
-    #     with self.db.SessionLocal() as session:
-    #         stmt = select(
-    #             Events.match_id,
-    #             Events.hasXg,
-    #             Events.hasEventPlayerStatistics,
-    #             Events.hasEventPlayerHeatMap,
-    #         ).where(
-    #             Events.season_id == season_id,
-    #             Events.status_type == EventsStatusTypes.FINISHED,
-    #         )
-    #
-    #         if debug_limit is not None:
-    #             stmt = stmt.limit(debug_limit)
-    #
-    #         matches = session.execute(stmt).all()
-    #
-    #         if not matches:
-    #             logger.warning(
-    #                 f"⚠️ No matches found in the database: season_id: {season_id}"
-    #             )
-    #             return 0
-    #
-    #         logger.info(f"Found {len(matches)} matches. Processing...")
-    #
-    #         queued_count = 0
-    #         skipped_count = 0
-    #
-    #         for row in matches:
-    #             # 1. SRP Helper: Get the status
-    #             target_status = self._determine_task_status(row, component, strict_mode)
-    #
-    #             # 2. Database Action: Create and merge the task
-    #             task = MatchComponentAudit(
-    #                 match_id=row.match_id,
-    #                 component_name=component.value,
-    #                 status=target_status,
-    #             )
-    #             session.merge(task)
-    #
-    #             # 3. Counter Action: Update the correct tally
-    #             if target_status == AuditStatusTypes.SKIPPED_MISSING:
-    #                 skipped_count += 1
-    #             else:
-    #                 queued_count += 1
-    #
-    #         session.commit()
-    #         logger.info(
-    #             f"✅ Finished! Queued {queued_count} tasks | Skipped {skipped_count} tasks."
-    #         )
-    #
-    #     return queued_count
-    #
     def _get_events_season(
         self, session: Session, season_id: int, debug_limit: int | None = None
     ) -> list[Events]:
@@ -554,3 +492,110 @@ class Orchestrator:
             f"Multi-component queue complete for Season {season_id}: {components_queued_count}"
         )
         return components_queued_count
+
+    # --- helpers sync session ---
+
+    def _call_event_api(
+        self, tournament_id: int, season_id: int
+    ) -> tuple[Any, list[dict]]:
+        """
+        Spawns a driver, scrapes the season events, and closes the driver.
+        Returns the parsed Pydantic data and raw JSON list.
+        """
+        driver = self.mw.spawn_webdriver()
+        try:
+            scraper = EventsComponentScraper(
+                tournamentid=tournament_id,
+                seasonid=season_id,
+                webdriver=driver,
+                cfg=self.config,
+            )
+            parsed_api_data, raw_api_data = self._scraper_process(scraper=scraper)
+
+            # Extract the actual list of events from the raw payload
+            raw_events_list = raw_api_data.get("events", [])
+            return parsed_api_data, raw_events_list
+        finally:
+            # Ensure the driver always closes, even if the scraper crashes!
+            driver.close()
+
+    def _get_sync_event_delta(
+        self, api_events_list: list[Any], db_events_set: set[int]
+    ) -> list[int]:
+        """
+        Compares the API 'finished' matches against our DB knowledge.
+        Returns a list of NEWLY finished match_ids.
+        """
+        delta_match_ids = []
+
+        for p_event in api_events_list:
+            if p_event.status.type == EventsStatusTypes.FINISHED.value:
+                if p_event.id not in db_events_set:
+                    delta_match_ids.append(p_event.id)
+
+        logger.info(f"-> Discovered {len(delta_match_ids)} NEWLY finished matches.")
+        return delta_match_ids
+
+    def _upsert_calendar(
+        self,
+        tournament_id: int,
+        parsed_events_list: list[Any],
+        raw_events_list: list[dict],
+    ) -> None:
+        """
+        Safely upserts the full calendar to update statuses and future kick-off times.
+        """
+        logger.info("-> Upserting calendar to the Events table...")
+        try:
+            self.db.upsert_events(
+                tournament_id=tournament_id,
+                parsed_events=parsed_events_list,
+                raw_event=raw_events_list,
+            )
+            logger.info("✅ Database Calendar Updated.")
+        except Exception as e:
+            logger.error(f"❌ Failed to upsert calendar: {e}")
+
+    # --- sync session main method ---
+
+    def sync_events(self, tournament_id: int, season_id: int) -> list[int]:
+        """
+        Updates the events table for the given tournament and season.
+        Returns a list of NEWLY finished match IDs.
+        """
+        # 1. Get the events the DB already knows are finished
+        with self.db.SessionLocal() as session:
+            matches = self._get_events_season(session=session, season_id=season_id)
+
+        db_events_set = set(m.match_id for m in matches)
+
+        # 2. Scrape the latest calendar from the API
+        parsed_api_data, raw_events_list = self._call_event_api(
+            tournament_id=tournament_id, season_id=season_id
+        )
+
+        # NOTE: Adjust '.events' based on your actual Pydantic schema structure!
+        parsed_events_list = parsed_api_data.events
+
+        logger.info(
+            f"-> API returned {len(parsed_events_list)} total matches for the season."
+        )
+
+        # 3. Calculate the Delta
+        delta_match_ids = self._get_sync_event_delta(
+            api_events_list=parsed_events_list, db_events_set=db_events_set
+        )
+
+        # 4. ALWAYS update the calendar if the API returned data
+        if parsed_events_list:
+            self._upsert_calendar(
+                tournament_id=tournament_id,
+                parsed_events_list=parsed_events_list,
+                raw_events_list=raw_events_list,
+            )
+        else:
+            logger.warning(
+                "⚠️ No events parsed from the API. Skipping database upsert."
+            )
+
+        return delta_match_ids
