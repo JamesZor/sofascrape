@@ -20,7 +20,7 @@ target_components: list[Component] = [Component.BASE, Component.STATS]
 
 
 results_queue = pipeline.queue_season_missing_components(
-    season_id=TARGET_SEASON_ID, components=target_components, debug_limit=5
+    season_id=TARGET_SEASON_ID, components=target_components, debug_limit=10
 )
 
 

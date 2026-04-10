@@ -3,7 +3,6 @@ database:
 
 pipeline:
   max_retries: 3                        # How many times to retry QA mismatch or API error 
-  qa_pause_seconds: 2.0                 # How long to sleep between Fetch A and B 
   batch_size: 50                        # How many matches the orchestractor processes at once
 
 links:

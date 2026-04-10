@@ -6,12 +6,14 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Dict, Type
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from tqdm import tqdm
 
 # Import your heavy webdriver manager
-from webdriver import ManagerWebdriver, MyWebDriver
+from webdriver import (
+    ManagerWebdriver,
+)
 
 from sofascrape.abstract.base import BaseComponentScraper
 from sofascrape.conf.config import AppConfig
@@ -634,3 +636,97 @@ class Orchestrator:
             self.run_worker_loop()
         else:
             logger.info("✅ Database is fully up-to-date. No workers needed today.")
+
+    # --- helper: janitor ---
+
+    def _build_janitor_conditions(
+        self,
+        tournament_id: int | None,
+        season_id: int | None,
+        allowed_statuses: list[AuditStatusTypes],
+        max_retries: int,
+    ) -> list:
+        """
+        SRP Helper: Constructs the WHERE clauses for the Janitor's bulk update.
+        """
+        # 1. Base conditions
+        conditions = [
+            MatchComponentAudit.status.in_([s.value for s in allowed_statuses]),
+            MatchComponentAudit.retry_count < max_retries,
+        ]
+
+        # 2. The Subquery (Only needed if we are filtering by tournament/season)
+        if tournament_id or season_id:
+            from sqlalchemy import select
+
+            from sofascrape.db.models import Events
+
+            stmt_events = select(Events.match_id)
+            if tournament_id:
+                stmt_events = stmt_events.where(Events.tournament_id == tournament_id)
+            if season_id:
+                stmt_events = stmt_events.where(Events.season_id == season_id)
+
+            # Turn the SELECT into a subquery constraint
+            events_subquery = stmt_events.scalar_subquery()
+            conditions.append(MatchComponentAudit.match_id.in_(events_subquery))
+
+        return conditions
+
+    # --- main workflow method ---
+
+    def retry_failed_components(
+        self,
+        tournament_id: int | None = None,
+        season_id: int | None = None,
+        allowed_statuses: list[AuditStatusTypes] | None = None,
+        max_retries: int | None = None,
+    ) -> int:
+        """
+        WORKFLOW C: The Janitor.
+        Finds tasks that failed due to temporary errors (like QA Mismatches)
+        and resets them to PENDING so the worker loop can try them again.
+        """
+        # Fix the Python default argument "gotchas" safely
+        if allowed_statuses is None:
+            allowed_statuses = [
+                AuditStatusTypes.QA_MISMATCH,
+                AuditStatusTypes.API_ERROR,
+            ]
+        if max_retries is None:
+            max_retries = self.config.pipeline.max_retries
+
+        logger.info("🧹 Starting Janitor: Sweeping up failed tasks...")
+
+        # 1. SRP Helper: Get the exact SQL conditions we need
+        conditions = self._build_janitor_conditions(
+            tournament_id=tournament_id,
+            season_id=season_id,
+            allowed_statuses=allowed_statuses,
+            max_retries=max_retries,
+        )
+
+        # 2. Database Action: Perform the bulk update
+        with self.db.SessionLocal() as session:
+            from sqlalchemy import update
+
+            stmt_update = (
+                update(MatchComponentAudit)
+                .where(*conditions)
+                .values(status=AuditStatusTypes.PENDING.value)
+            )
+
+            result = session.execute(stmt_update)
+            session.commit()
+
+            requeued_count = result.rowcount
+
+        # 3. Logging Action
+        if requeued_count > 0:
+            logger.info(
+                f"♻️ Janitor swept up {requeued_count} tasks and set them to PENDING."
+            )
+        else:
+            logger.info("✨ No eligible failed tasks found. The queue is clean!")
+
+        return requeued_count
