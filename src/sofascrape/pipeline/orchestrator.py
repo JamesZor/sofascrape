@@ -198,8 +198,8 @@ class Orchestrator:
 
             # Anti-Randomization Pause
             smart_sleep(
-                strategy=self.config.pipeline.anti_bot_sleep.strategy,
-                params=self.config.pipeline.anti_bot_sleep.params,
+                strategy=self.config.anti_bot_sleep.strategy,
+                params=self.config.anti_bot_sleep.params,
             )
 
             # FETCH B (Completely Fresh Instance)
