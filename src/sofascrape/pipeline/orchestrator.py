@@ -271,18 +271,21 @@ class Orchestrator:
             )
             data_b, _ = self._scraper_process(scraper_b)
 
-            # In-Memory Comparison
-            if data_a is None and data_b is None:
-                # Both fetches returned nothing. The data doesn't exist.
-                self._handle_unavailable(task)
-                return False
-            elif data_a == data_b:
-                # Data exists and is identical. Golden!
-                self._handle_qa_success(task, data_a, raw_a)
-                return True
+            # Check for the Delta
+            is_match, delta = self._get_qa_delta(data_a, data_b)
+
+            if is_match:
+                if data_a is None:
+                    # Both are None -> 404 / No Data
+                    self._handle_unavailable(task)
+                    return False
+                else:
+                    # Both matched -> Golden Data!
+                    self._handle_qa_success(task, data_a, raw_a)
+                    return True
             else:
-                # Data exists but is different. We caught them randomizing!
-                self._handle_qa_mismatch(task)
+                # They didn't match -> Anti-Bot triggered!
+                self._handle_qa_mismatch(task, delta)
                 return False
 
         except Exception as e:
