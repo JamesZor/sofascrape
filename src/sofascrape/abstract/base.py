@@ -59,26 +59,46 @@ class BaseComponentScraper(BaseScraperModel, ABC, Generic[T]):
 
         pass
 
-    def process(self) -> Optional[T]:  # Make sure the return type is Optional[T]
-        """High-level workflow: fetch, parse, and return data."""
+    # HACK: 2026-04-10
+    #
+    # def process(self) -> Optional[T]:  # Make sure the return type is Optional[T]
+    #     """High-level workflow: fetch, parse, and return data."""
+    #     try:
+    #         # self.get_data() can now potentially set self.raw_data to None
+    #         self.get_data()
+    #
+    #         # If get_data() resulted in no data (e.g., a 404), just return None.
+    #         if self.raw_data is None:
+    #             logger.warning(
+    #                 "No raw data available to process. Component will return None."
+    #             )
+    #             return None
+    #
+    #         self.parse_data()
+    #         return self.data
+    #
+    #     except Exception as e:
+    #         logger.error(f"Processing failed with an exception: {str(e)}")
+    #         # In case of an unexpected error, return None to prevent crashing the whole scrape
+    #         return None
+
+    def process(self) -> tuple[Optional[T], Optional[dict]]:
+        """High-level workflow: fetch, parse, and return both parsed and raw data."""
         try:
-            # self.get_data() can now potentially set self.raw_data to None
             self.get_data()
 
-            # If get_data() resulted in no data (e.g., a 404), just return None.
-            if self.raw_data is None:
+            if not self.raw_data:
                 logger.warning(
-                    "No raw data available to process. Component will return None."
+                    "⚠️ No raw data available to process. Component will return None."
                 )
-                return None
+                return None, None
 
             self.parse_data()
-            return self.data
+            return self.data, self.raw_data
 
         except Exception as e:
-            logger.error(f"Processing failed with an exception: {str(e)}")
-            # In case of an unexpected error, return None to prevent crashing the whole scrape
-            return None
+            logger.error(f"❌ Processing failed with an exception: {str(e)}")
+            return None, None
 
 
 class BaseMatchScraper(BaseScraperModel, ABC):

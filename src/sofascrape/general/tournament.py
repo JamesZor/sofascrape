@@ -1,12 +1,11 @@
 import logging
 from typing import Dict, Optional
 
-from hydra import compose, initialize
-from omegaconf import DictConfig
 from pydantic import ValidationError
 from webdriver import MyWebDriver
 
 from sofascrape.abstract.base import BaseComponentScraper
+from sofascrape.conf.config import AppConfig
 from sofascrape.schemas.general import TournamentData
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,7 @@ class TournamentComponentScraper(BaseComponentScraper):
         self,
         tournamentid: int,
         webdriver: MyWebDriver,
-        cfg: Optional[DictConfig] = None,
+        cfg: Optional[AppConfig] = None,
     ) -> None:
         """Initialize the tournament scraper.
 

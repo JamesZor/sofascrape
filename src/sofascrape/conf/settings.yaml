@@ -1,0 +1,32 @@
+database:
+  url: "postgresql://admin:supersecretpassword@192.168.1.88:5432/sofascrape_db"
+
+pipeline:
+  max_workers: 5
+  max_retries: 3                        # How many times to retry QA mismatch or API error 
+  batch_size: 400                        # How many matches the orchestractor processes at once
+
+links:
+  tournament_empty: "https://api.sofascore.com/api/v1/tournament/{tournamentID}"
+  seasons_empty : "https://api.sofascore.com/api/v1/tournament/{tournamentID}/seasons"
+  events_season_empty: "https://api.sofascore.com/api/v1/tournament/{tournamentID}/season/{seasonID}/events"
+  # football match 
+  football_base_match: "https://api.sofascore.com/api/v1/event/{match_id}"
+  football_stats: "https://api.sofascore.com/api/v1/event/{match_id}/statistics"
+  football_lineup: "https://api.sofascore.com/api/v1/event/{match_id}/lineups"
+  football_incidents: "https://api.sofascore.com/api/v1/event/{match_id}/incidents"
+  football_graph: "https://api.sofascore.com/api/v1/event/{match_id}/graph"
+  football_heatmap: "https://api.sofascore.com/api/v1/event/{match_id}/player/{player_id}/heatmap"
+  football_odds: "https://api.sofascore.com/api/v1/event/{match_id}/odds/1/all"
+
+
+scraper:
+  user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+  timeout_seconds: 15
+
+
+anti_bot_sleep:
+    strategy: "gamma"
+    params:
+      alpha: 4
+      beta: 1
