@@ -141,11 +141,12 @@ pipeline = Orchestrator(db, config)
 # target_components = [Component.BASE]
 #
 #
-# target_components = [Component.INCIDENTS]
 #
-target_components = [Component.BASE]
-
-target_components = [Component.ODDS]
+# target_components = [Component.BASE]
+#
+# target_components = [Component.ODDS]
+#
+target_components = [Component.LINEUPS]
 # Create a list of tuples containing (tournament_id, season_id)
 # This ensures the API gets the exact right combination every time!
 historical_targets = [
