@@ -48,4 +48,60 @@ def get_seasonid_year_from_tournament(
         return seasons
 
 
+def queue_list_of_seasons(
+    season_tournament_list: list[int, int],
+    target_components: list,
+    pipeline: Orchestrator,
+) -> int:
+
+    print("📥 Building the historical backfill queue...")
+    total_queued = 0
+
+    for season_id, tournament_id in season_tournament_list:
+        print(f"\n--- Processing Tournament {tournament_id} | Season {season_id} ---")
+
+        # 1. Update the Events table first!
+        pipeline.sync_events(tournament_id=tournament_id, season_id=season_id)
+
+        # 2. Now that the DB knows about the matches, queue up the components!
+        queued_dict = pipeline.queue_season_missing_components(
+            season_id=season_id, components=target_components
+        )
+
+        # Flatten the dict to get the int count and add it to our total
+        season_total = sum(queued_dict.values())
+        total_queued += season_total
+
+        print(f" -> Season {season_id}: Queued {season_total} new tasks.")
+
+    print(f"\n🚀 Total tasks queued: {total_queued}.")
+    return total_queued
+
+
 ses = get_seasonid_year_from_tournament(3284)
+target_components = [Component.BASE]
+target_components = [Component.STATS]
+
+
+base_one = queue_list_of_seasons(
+    season_tournament_list=ses, target_components=target_components, pipeline=pipeline
+)
+
+"""
+    ran for: base. 
+    Out[45]: [(88606, 3284), (70830, 3284), (57878, 3284)]
+"""
+
+
+pipeline.run_worker_loop(
+    max_workers=config.pipeline.max_workers,
+    task_limit=500,  # <-- Let it run until it's finished!
+)
+
+
+pipeline.run_worker_loop(
+    max_workers=2, task_limit=10  # Just need 1 or 2 workers for a quick cleanup
+)
+
+
+ses

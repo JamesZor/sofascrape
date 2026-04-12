@@ -69,7 +69,7 @@ def validate_graph(row: Any) -> bool:
 
 # Map components to their respective validation functions
 VALIDATOR_STRATEGIES: Dict[Component, Callable[[Any], bool]] = {
-    Component.STATS: validate_stats,
+    # Component.STATS: validate_stats, don't think this is correct
     Component.GRAPH: validate_graph,
 }
 

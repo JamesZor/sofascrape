@@ -2,7 +2,7 @@ database:
   url: "postgresql://admin:supersecretpassword@192.168.1.88:5432/sofascrape_db"
 
 pipeline:
-  max_workers: 5
+  max_workers: 3
   max_retries: 3                        # How many times to retry QA mismatch or API error 
   batch_size: 400                        # How many matches the orchestractor processes at once
 
