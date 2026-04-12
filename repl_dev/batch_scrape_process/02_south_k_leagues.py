@@ -20,7 +20,7 @@ pipeline = Orchestrator(db, config)
 # --- Init tournaments
 # ********************
 
-pipeline.setup_tournament(3284)  # K league one
+# pipeline.setup_tournament(3284)  # K league one
 pipeline.setup_tournament(6230)  # K league two
 
 
@@ -83,11 +83,10 @@ def queue_list_of_seasons(
     return total_queued
 
 
-ses = get_seasonid_year_from_tournament(3284)
+ses = get_seasonid_year_from_tournament(3284, result_limit=6)
+
 target_components = [Component.BASE]
-
 target_components = [Component.STATS]
-
 target_components = [Component.ODDS]
 
 
@@ -105,13 +104,25 @@ base_one = queue_list_of_seasons(
 
 pipeline.run_worker_loop(
     max_workers=config.pipeline.max_workers,
-    task_limit=500,  # <-- Let it run until it's finished!
+    task_limit=2000,  # <-- Let it run until it's finished!
 )
 
 
+pipeline.retry_failed_components()
 pipeline.run_worker_loop(
     max_workers=2, task_limit=20  # Just need 1 or 2 workers for a quick cleanup
 )
 
+# k league 2
+ses2 = get_seasonid_year_from_tournament(6230, result_limit=6)
+ses2
 
-ses
+
+base_one = queue_list_of_seasons(
+    season_tournament_list=ses2, target_components=target_components, pipeline=pipeline
+)
+
+pipeline.run_worker_loop(
+    max_workers=config.pipeline.max_workers,
+    task_limit=4000,  # <-- Let it run until it's finished!
+)

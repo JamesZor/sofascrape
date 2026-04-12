@@ -206,5 +206,5 @@ pipeline.retry_failed_components()
 
 # 2. Run the engine to fetch those last 6 matches
 pipeline.run_worker_loop(
-    max_workers=2, task_limit=10  # Just need 1 or 2 workers for a quick cleanup
+    max_workers=2, task_limit=20  # Just need 1 or 2 workers for a quick cleanup
 )
