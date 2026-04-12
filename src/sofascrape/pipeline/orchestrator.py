@@ -688,7 +688,9 @@ class Orchestrator:
             )
             logger.info("✅ Database Calendar Updated.")
         except Exception as e:
-            logger.error(f"❌ Failed to upsert calendar: {e}")
+            logger.error(
+                f"❌ Failed to upsert calendar for tournament_id:{tournament_id}: {e}"
+            )
 
     # --- sync session main method ---
 

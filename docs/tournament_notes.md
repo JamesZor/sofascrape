@@ -167,5 +167,5 @@ Switzerland:
 
 
 South Korea 
- - K League 1 (ID: 3281, slug: k-league-1)
+ - K League 1 (ID: 3284, slug: k-league-1)
  - K League 2 (ID: 6230, slug: k-league-2)
