@@ -1,3 +1,5 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -5,6 +7,9 @@ from sofascrape.conf.config import load_config
 from sofascrape.db.manager import DatabaseManager
 from sofascrape.db.models import Component, Events, MatchComponentAudit, Season
 from sofascrape.pipeline.orchestrator import Orchestrator
+
+logging.basicConfig(level=logging.WARNING, force=True)
+logging.getLogger("sofascrape").setLevel(logging.WARNING)
 
 config = load_config()
 db = DatabaseManager(config)
@@ -80,8 +85,13 @@ def queue_list_of_seasons(
 
 ses = get_seasonid_year_from_tournament(3284)
 target_components = [Component.BASE]
+
 target_components = [Component.STATS]
 
+target_components = [Component.ODDS]
+
+
+target_components = [Component.BASE, Component.STATS, Component.ODDS]
 
 base_one = queue_list_of_seasons(
     season_tournament_list=ses, target_components=target_components, pipeline=pipeline
@@ -100,7 +110,7 @@ pipeline.run_worker_loop(
 
 
 pipeline.run_worker_loop(
-    max_workers=2, task_limit=10  # Just need 1 or 2 workers for a quick cleanup
+    max_workers=2, task_limit=20  # Just need 1 or 2 workers for a quick cleanup
 )
 
 

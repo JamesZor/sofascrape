@@ -646,6 +646,9 @@ class Orchestrator:
             )
             parsed_api_data, raw_api_data = scraper.process()
 
+            if not raw_api_data or not parsed_api_data:
+                return None, []
+
             # Extract the actual list of events from the raw payload
             raw_events_list = raw_api_data.get("events", [])
             return parsed_api_data, raw_events_list
