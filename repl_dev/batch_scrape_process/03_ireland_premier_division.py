@@ -88,7 +88,9 @@ pipeline.setup_tournament(ireland_premier_division_tournament_id)
 
 # scrape
 
-list_season_ids = get_seasonid_year_from_tournament(3284, result_limit=6)
+list_season_ids = get_seasonid_year_from_tournament(
+    ireland_premier_division_tournament_id, result_limit=6
+)
 
 target_components = [Component.BASE, Component.STATS, Component.ODDS, Component.LINEUPS]
 
