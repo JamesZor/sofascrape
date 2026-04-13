@@ -129,26 +129,34 @@ class DatabaseManager:
     ) -> None:
 
         with self.SessionLocal() as session:
-            for parsed_event, raw_event in zip(parsed_events, raw_event):
+            for parsed_event, raw_data_dict in zip(parsed_events, raw_event):
                 ev = Events(
+                    # --- CORE PILLARS (Direct Access - Let it crash if missing) ---
                     match_id=parsed_event.id,
                     tournament_id=tournament_id,
                     season_id=parsed_event.season.id,
-                    name=parsed_event.slug,
-                    round=parsed_event.roundInfo.round,
                     home_team=parsed_event.homeTeam.slug,
                     away_team=parsed_event.awayTeam.slug,
-                    status_type=parsed_event.status.type,
                     start_timestamp=parsed_event.startTimestamp,
-                    hasGlobalHighlights=parsed_event.hasGlobalHighlights,
-                    hasXg=parsed_event.hasXg,
-                    hasEventPlayerStatistics=parsed_event.hasEventPlayerStatistics,
-                    hasEventPlayerHeatMap=parsed_event.hasEventPlayerStatistics,
-                    raw_data=raw_event,
+                    # --- FLAKY METADATA (Use safe_get - Allow None) ---
+                    name=safe_get(parsed_event, "slug"),
+                    round=safe_get(parsed_event, "roundInfo", "round"),
+                    status_type=safe_get(parsed_event, "status", "type"),
+                    # Booleans (Use safe_get with a default of False just in case)
+                    hasGlobalHighlights=safe_get(
+                        parsed_event, "hasGlobalHighlights", default=False
+                    ),
+                    hasXg=safe_get(parsed_event, "hasXg", default=False),
+                    hasEventPlayerStatistics=safe_get(
+                        parsed_event, "hasEventPlayerStatistics", default=False
+                    ),
+                    hasEventPlayerHeatMap=safe_get(
+                        parsed_event, "hasEventPlayerHeatMap", default=False
+                    ),
+                    raw_data=raw_data_dict,
                 )
 
                 session.merge(ev)
-            # finished the zip loop
             session.commit()
 
     def upsert_match(
