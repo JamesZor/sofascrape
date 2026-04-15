@@ -38,11 +38,11 @@ division_1st_tour_id = 6
 #
 
 list_season_ids_l1 = get_seasonid_year_from_tournament(
-    pipeline=pipeline, tournament_id=eliteserien_tour_id, result_limit=3
+    pipeline=pipeline, tournament_id=eliteserien_tour_id, result_limit=6
 )
 
 list_season_ids_l2 = get_seasonid_year_from_tournament(
-    pipeline=pipeline, tournament_id=division_1st_tour_id, result_limit=3
+    pipeline=pipeline, tournament_id=division_1st_tour_id, result_limit=6
 )
 
 
