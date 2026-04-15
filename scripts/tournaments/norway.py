@@ -30,12 +30,12 @@ eliteserien_tour_id = 5
 division_1st_tour_id = 6
 
 
-pipeline.setup_tournament(eliteserien_tour_id)
-pipeline.setup_tournament(division_1st_tour_id)
-
-pipeline.setup_tournament(eliteserien_tour_id)
-pipeline.setup_tournament(division_1st_tour_id)
-
+# pipeline.setup_tournament(eliteserien_tour_id)
+# pipeline.setup_tournament(division_1st_tour_id)
+#
+# pipeline.setup_tournament(eliteserien_tour_id)
+# pipeline.setup_tournament(division_1st_tour_id)
+#
 
 list_season_ids_l1 = get_seasonid_year_from_tournament(
     pipeline=pipeline, tournament_id=eliteserien_tour_id, result_limit=3
