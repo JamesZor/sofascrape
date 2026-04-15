@@ -11,8 +11,16 @@ from sofascrape.pipeline.orchestrator import Orchestrator
 logging.basicConfig(level=logging.WARNING, force=True)
 logging.getLogger("sofascrape").setLevel(logging.WARNING)
 
+config = load_config()
+db = DatabaseManager(config)
+pipeline = Orchestrator(db, config)
 
-# --- get season ids for a tournament
+
+"""
+Scotland:
+  - League One (ID: 56, Slug: league-one)
+  - League Two (ID: 57, Slug: league-two)
+"""
 
 
 def get_seasonid_year_from_tournament(
@@ -47,7 +55,7 @@ def queue_list_of_seasons(
     pipeline: Orchestrator,
 ) -> int:
 
-    print("📥 Building the historical backfill queue...")
+    print("Building the historical backfill queue...")
     total_queued = 0
 
     for season_id, tournament_id in season_tournament_list:
@@ -67,77 +75,67 @@ def queue_list_of_seasons(
 
         print(f" -> Season {season_id}: Queued {season_total} new tasks.")
 
-    print(f"\n🚀 Total tasks queued: {total_queued}.")
+    print(f"\nTotal tasks queued: {total_queued}.")
     return total_queued
-
-
-config = load_config()
-db = DatabaseManager(config)
-pipeline = Orchestrator(db, config)
 
 
 # ********************
 # --- Init tournaments
 # ********************
-leauge_k1 = 3284
-leauge_k2 = 6230
+scotland_league_one = 56
+scotland_league_two = 57
 
-pipeline.setup_tournament(leauge_k1)  # K league one
-pipeline.setup_tournament(leauge_k2)  # K league two
+# pipeline.setup_tournament(scotland_league_one)
+# pipeline.setup_tournament(scotland_league_two)
 
 
-seaosn_k1 = get_seasonid_year_from_tournament(leauge_k1, result_limit=6)
-seaosn_k2 = get_seasonid_year_from_tournament(leauge_k2, result_limit=6)
+# scrape
 
+list_season_ids_l1 = get_seasonid_year_from_tournament(
+    scotland_league_one, result_limit=6
+)
+list_season_ids_l1
+
+
+list_season_ids_l2 = get_seasonid_year_from_tournament(
+    scotland_league_one, result_limit=6
+)
+list_season_ids_l2
 
 target_components = [
     Component.BASE,
-    Component.STATS,
     Component.ODDS,
     Component.LINEUPS,
     Component.INCIDENTS,
 ]
 
 base_one = queue_list_of_seasons(
-    season_tournament_list=seaosn_k1,
+    season_tournament_list=list_season_ids_l1,
     target_components=target_components,
     pipeline=pipeline,
 )
 
 
 base_two = queue_list_of_seasons(
-    season_tournament_list=seaosn_k2,
+    season_tournament_list=list_season_ids_l2,
     target_components=target_components,
     pipeline=pipeline,
 )
 
-"""
-    ran for: base. 
-    Out[45]: [(88606, 3284), (70830, 3284), (57878, 3284)]
-"""
-
 
 pipeline.run_worker_loop(
     max_workers=config.pipeline.max_workers,
-    task_limit=2000,  # <-- Let it run until it's finished!
+    task_limit=5000,  # <-- Let it run until it's finished!
 )
-
 
 pipeline.retry_failed_components()
 pipeline.run_worker_loop(
     max_workers=2, task_limit=20  # Just need 1 or 2 workers for a quick cleanup
 )
 
-# k league 2
-ses2 = get_seasonid_year_from_tournament(6230, result_limit=6)
-ses2
 
+season_1, l1_id = list_season_ids_l1[0]
+season_2, l2_id = list_season_ids_l2[0]
 
-base_one = queue_list_of_seasons(
-    season_tournament_list=ses2, target_components=target_components, pipeline=pipeline
-)
-
-pipeline.run_worker_loop(
-    max_workers=config.pipeline.max_workers,
-    task_limit=4000,  # <-- Let it run until it's finished!
-)
+pipeline.sync_events(tournament_id=l1_id, season_id=season_1)
+pipeline.sync_events(tournament_id=l2_id, season_id=season_2)
