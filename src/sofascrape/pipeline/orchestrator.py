@@ -713,6 +713,12 @@ class Orchestrator:
             tournament_id=tournament_id, season_id=season_id
         )
 
+        if not parsed_api_data:
+            logger.error(
+                f"❌ Aborting calendar sync for Season {season_id} due to API failure."
+            )
+            return
+
         parsed_events_list = parsed_api_data.events
 
         logger.info(
