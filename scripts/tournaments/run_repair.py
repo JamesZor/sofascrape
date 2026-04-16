@@ -15,5 +15,5 @@ pipeline = Orchestrator(db, config)
 
 pipeline.retry_failed_components()
 pipeline.run_worker_loop(
-    max_workers=2, task_limit=20  # Just need 1 or 2 workers for a quick cleanup
+    max_workers=2, task_limit=2000  # Just need 1 or 2 workers for a quick cleanup
 )
