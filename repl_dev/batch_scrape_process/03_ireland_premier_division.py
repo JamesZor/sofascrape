@@ -89,8 +89,9 @@ pipeline.setup_tournament(ireland_premier_division_tournament_id)
 # scrape
 
 list_season_ids = get_seasonid_year_from_tournament(
-    ireland_premier_division_tournament_id, result_limit=6
+    ireland_premier_division_tournament_id, result_limit=1
 )
+# Out[7]: [(87682, 79)]
 
 target_components = [
     Component.BASE,
@@ -114,4 +115,11 @@ pipeline.run_worker_loop(
 pipeline.retry_failed_components()
 pipeline.run_worker_loop(
     max_workers=2, task_limit=20  # Just need 1 or 2 workers for a quick cleanup
+)
+
+# weekly update runner
+pipeline.sync_season(
+    tournament_id=list_season_ids[0][1],
+    season_id=list_season_ids[0][0],
+    components=target_components,
 )

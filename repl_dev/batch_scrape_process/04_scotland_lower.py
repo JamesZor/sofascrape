@@ -139,3 +139,18 @@ season_2, l2_id = list_season_ids_l2[0]
 
 pipeline.sync_events(tournament_id=l1_id, season_id=season_1)
 pipeline.sync_events(tournament_id=l2_id, season_id=season_2)
+
+
+# weekly update runner
+pipeline.sync_season(
+    tournament_id=l1_id,
+    season_id=season_1,
+    components=target_components,
+)
+
+
+pipeline.sync_season(
+    tournament_id=l2_id,
+    season_id=season_2,
+    components=target_components,
+)
