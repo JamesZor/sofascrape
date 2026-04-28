@@ -130,6 +130,7 @@ Chile:
 
 Ireland:
   - Premier Division (ID: 79, Slug: premier-division)
+  - First Division (ID: 718, Slug: first-division) 
 
 Japan:
   - J.League (ID: 82, Slug: jleague)

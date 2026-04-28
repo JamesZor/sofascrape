@@ -26,8 +26,9 @@ db = DatabaseManager(config)
 pipeline = Orchestrator(db, config)
 
 
-tour_id = 79
-
+# tour_id = 79
+tour_id = 718
+pipeline.setup_tournament(tour_id)
 pipeline.setup_tournament(tour_id)
 
 list_season_ids_l1 = get_seasonid_year_from_tournament(
