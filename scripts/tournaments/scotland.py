@@ -37,13 +37,13 @@ scotland_league_two = 57
 # scrape
 
 list_season_ids_l1 = get_seasonid_year_from_tournament(
-    scotland_league_one, result_limit=1
+    pipeline=pipeline, tournament_id=scotland_league_one, result_limit=1
 )
 list_season_ids_l1
 
 
 list_season_ids_l2 = get_seasonid_year_from_tournament(
-    scotland_league_two, result_limit=1
+    pipeline=pipeline, tournament_id=scotland_league_two, result_limit=1
 )
 list_season_ids_l2
 
