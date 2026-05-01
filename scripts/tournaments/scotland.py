@@ -19,54 +19,83 @@ config = load_config()
 db = DatabaseManager(config)
 pipeline = Orchestrator(db, config)
 
+# ********************
+# --- Init tournaments
+# ********************
+scotland_league_one = 56
+scotland_league_two = 57
 
-eliteserien_tour_id = 54
-division_1st_tour_id = 55
+
+# scotland_pl = 54
+# scotland_ch = 55
+#
+
+# pipeline.setup_tournament(scotland_league_one)
+# pipeline.setup_tournament(scotland_league_two)
 
 
-# pipeline.setup_tournament(eliteserien_tour_id)
-# pipeline.setup_tournament(division_1st_tour_id)
-#
-# pipeline.setup_tournament(eliteserien_tour_id)
-# pipeline.setup_tournament(division_1st_tour_id)
-# #
-#
-# list_season_ids_l1 = get_seasonid_year_from_tournament(
-#     pipeline=pipeline, tournament_id=eliteserien_tour_id, result_limit=6
-# )
-#
-# list_season_ids_l2 = get_seasonid_year_from_tournament(
-#     pipeline=pipeline, tournament_id=division_1st_tour_id, result_limit=6
-# )
-#
-#
-# target_components = [
-#     Component.BASE,
-#     Component.STATS,
-#     Component.ODDS,
-#     Component.LINEUPS,
-#     Component.INCIDENTS,
-# ]
-#
-# base_one = queue_list_of_seasons(
-#     season_tournament_list=list_season_ids_l1,
-#     target_components=target_components,
-#     pipeline=pipeline,
-# )
-#
-# base_two = queue_list_of_seasons(
-#     season_tournament_list=list_season_ids_l2,
-#     target_components=target_components,
-#     pipeline=pipeline,
-# )
-#
-pipeline.run_worker_loop(
-    max_workers=config.pipeline.max_workers,
-    task_limit=6000,  # <-- Let it run until it's finished!
+# scrape
+
+list_season_ids_l1 = get_seasonid_year_from_tournament(
+    scotland_league_one, result_limit=1
+)
+list_season_ids_l1
+
+
+list_season_ids_l2 = get_seasonid_year_from_tournament(
+    scotland_league_two, result_limit=1
+)
+list_season_ids_l2
+
+target_components = [
+    Component.BASE,
+    Component.ODDS,
+    Component.LINEUPS,
+    Component.INCIDENTS,
+]
+
+base_one = queue_list_of_seasons(
+    season_tournament_list=list_season_ids_l1,
+    target_components=target_components,
+    pipeline=pipeline,
 )
 
 
+base_two = queue_list_of_seasons(
+    season_tournament_list=list_season_ids_l2,
+    target_components=target_components,
+    pipeline=pipeline,
+)
+
+
+pipeline.run_worker_loop(
+    max_workers=config.pipeline.max_workers,
+    task_limit=5000,  # <-- Let it run until it's finished!
+)
+
 pipeline.retry_failed_components()
 pipeline.run_worker_loop(
-    max_workers=2, task_limit=2000  # Just need 1 or 2 workers for a quick cleanup
+    max_workers=2, task_limit=200  # Just need 1 or 2 workers for a quick cleanup
+)
+
+
+season_1, l1_id = list_season_ids_l1[0]
+season_2, l2_id = list_season_ids_l2[0]
+
+pipeline.sync_events(tournament_id=l1_id, season_id=season_1)
+pipeline.sync_events(tournament_id=l2_id, season_id=season_2)
+
+
+# weekly update runner
+pipeline.sync_season(
+    tournament_id=l1_id,
+    season_id=season_1,
+    components=target_components,
+)
+
+
+pipeline.sync_season(
+    tournament_id=l2_id,
+    season_id=season_2,
+    components=target_components,
 )
