@@ -32,7 +32,7 @@ tour_id = 79
 # pipeline.setup_tournament(tour_id)
 
 list_season_ids_l1 = get_seasonid_year_from_tournament(
-    pipeline=pipeline, tournament_id=tour_id, result_limit=6
+    pipeline=pipeline, tournament_id=tour_id, result_limit=3
 )
 
 
@@ -45,13 +45,22 @@ target_components = [
     Component.GRAPH,
 ]
 
-base_one = queue_list_of_seasons(
-    season_tournament_list=list_season_ids_l1,
-    target_components=target_components,
-    pipeline=pipeline,
-)
+# base_one = queue_list_of_seasons(
+#     season_tournament_list=list_season_ids_l1,
+#     target_components=target_components,
+#     pipeline=pipeline,
+# )
+#
+# pipeline.run_worker_loop(
+#     max_workers=config.pipeline.max_workers,
+#     task_limit=5000,  # <-- Let it run until it's finished!
+# )
+#
 
-pipeline.run_worker_loop(
-    max_workers=config.pipeline.max_workers,
-    task_limit=5000,  # <-- Let it run until it's finished!
+season_1, l1_id = list_season_ids_l1[0]
+pipeline.sync_events(tournament_id=l1_id, season_id=season_1)
+pipeline.sync_season(
+    tournament_id=l1_id,
+    season_id=season_1,
+    components=target_components,
 )
