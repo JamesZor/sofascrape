@@ -1,7 +1,7 @@
 """
 Ireland:
   - Premier Division (ID: 79, Slug: premier-division)
-
+  - First Division (ID: 718, Slug: first-division)
 """
 
 import logging
@@ -25,42 +25,29 @@ config = load_config()
 db = DatabaseManager(config)
 pipeline = Orchestrator(db, config)
 
-
-tour_id = 79
-# tour_id = 718
-# pipeline.setup_tournament(tour_id)
-# pipeline.setup_tournament(tour_id)
-
-list_season_ids_l1 = get_seasonid_year_from_tournament(
-    pipeline=pipeline, tournament_id=tour_id, result_limit=3
-)
-
+tournaments = [79, 718]
 
 target_components = [
-    Component.BASE,
-    Component.STATS,
-    Component.ODDS,
-    Component.LINEUPS,
-    Component.INCIDENTS,
     Component.GRAPH,
 ]
 
-# base_one = queue_list_of_seasons(
-#     season_tournament_list=list_season_ids_l1,
-#     target_components=target_components,
-#     pipeline=pipeline,
-# )
-#
-# pipeline.run_worker_loop(
-#     max_workers=config.pipeline.max_workers,
-#     task_limit=5000,  # <-- Let it run until it's finished!
-# )
-#
+all_seasons = []
 
-season_1, l1_id = list_season_ids_l1[0]
-pipeline.sync_events(tournament_id=l1_id, season_id=season_1)
-pipeline.sync_season(
-    tournament_id=l1_id,
-    season_id=season_1,
-    components=target_components,
+for tour_id in tournaments:
+    pipeline.setup_tournament(tour_id)
+    
+    list_season_ids = get_seasonid_year_from_tournament(
+        pipeline=pipeline, tournament_id=tour_id, result_limit=6
+    )
+    all_seasons.extend(list_season_ids)
+
+queue_list_of_seasons(
+    season_tournament_list=all_seasons,
+    target_components=target_components,
+    pipeline=pipeline,
+)
+
+pipeline.run_worker_loop(
+    max_workers=config.pipeline.max_workers,
+    task_limit=None,
 )
