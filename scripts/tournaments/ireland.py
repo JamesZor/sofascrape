@@ -28,6 +28,11 @@ pipeline = Orchestrator(db, config)
 tournaments = [79, 718]
 
 target_components = [
+    Component.BASE,
+    Component.ODDS,
+    Component.LINEUPS,
+    Component.INCIDENTS,
+    Component.STATS,
     Component.GRAPH,
 ]
 
@@ -35,7 +40,7 @@ all_seasons = []
 
 for tour_id in tournaments:
     pipeline.setup_tournament(tour_id)
-    
+
     list_season_ids = get_seasonid_year_from_tournament(
         pipeline=pipeline, tournament_id=tour_id, result_limit=6
     )
